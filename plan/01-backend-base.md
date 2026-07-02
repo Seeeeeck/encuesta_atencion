@@ -5,8 +5,8 @@ Backend Laravel configurado como API REST con autenticación Sanctum, conexión 
 logging de errores a `logs/` y CORS para el frontend.
 
 ## Pasos
-1. Configurar conexión PostgreSQL en `backend/config/database.php` + `.env` (`DB_CONNECTION=pgsql`).
-2. Instalar y configurar **Laravel Sanctum** (auth por token para la SPA).
+1. Configurar conexión PostgreSQL en `backend/config/database.php` + `.env` (`DB_CONNECTION=pgsql`). (listo)
+2. Instalar y configurar **Laravel Sanctum** (auth por token para la SPA). (listo)
 3. Definir la estructura de carpetas API: `app/Http/Controllers/Api/`, `app/Models/`.
 4. Configurar **CORS** (`config/cors.php`) para permitir el origen del frontend (Vite).
 5. Configurar **logging de errores** hacia `logs/` (canal de log apuntando a la carpeta `logs/`).

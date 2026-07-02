@@ -13,10 +13,18 @@
   propiedad del rol dedicado `encuesta_user` (no se usa el superusuario del sistema, por
   buena práctica de menor privilegio). Conexión por TCP `127.0.0.1:5432`. Credenciales reales
   solo en `backend/.env` (no versionado); `.env.example` documenta las claves sin password.
-- **Migraciones**: se corrió `php artisan migrate` — por ahora solo existen las tablas base
-  de Laravel (`users`, `cache`, `jobs`, `sessions`, etc.). Las tablas de dominio (`usuario`
-  con columna `rol`, `encuesta`, `pregunta`, `respuesta`) **aún no existen**, se crean en la
-  Fase 02 (`plan/02-modelo-datos.md`), todavía pendiente.
+- **Migraciones**: se corrió `php artisan migrate` — existen las tablas base de Laravel
+  (`users`, `cache`, `jobs`) más `personal_access_tokens` (Sanctum, batch 2). Las tablas de
+  dominio (`usuario` con columna `rol`, `encuesta`, `pregunta`, `respuesta`) **aún no existen**,
+  se crean en la Fase 02 (`plan/02-modelo-datos.md`), todavía pendiente.
+- **Fase 01 (backend base) en progreso** — pasos 1 y 2 de `plan/01-backend-base.md` `(listo)`:
+  - Paso 1: conexión PostgreSQL verificada (ya venía configurada desde Fase 00).
+  - Paso 2: **Sanctum instalado** (`laravel/sanctum` v4.3.2 vía Composer). Publicado
+    `config/sanctum.php` y la migración `create_personal_access_tokens_table` (publicando por
+    el provider completo, no solo el tag `sanctum-config`, ya que la migración usa un tag
+    separado). Trait `HasApiTokens` agregado a `app/Models/User.php` (verificado:
+    `createToken()` disponible en runtime). Pasos 3–7 (estructura API, CORS, logging a `logs/`,
+    endpoint de salud, exception handler) **pendientes**.
 - **Logs**: se usa `storage/logs/laravel.log` (canal `single` por defecto de Laravel). No se
   creó una carpeta `/logs` aparte — el paso 5 de la Fase 00 se marcó listo así.
 - **`.gitignore`**: el que trae Laravel 11+ ya cubre `.env`, `/vendor`, `/node_modules` y todo
@@ -25,7 +33,8 @@
   `composer install`, `php artisan migrate`, `php artisan serve`, `php artisan test`.
 
 ## Stack
-- Laravel (última) + PHP (última). Auth: **Sanctum** (token para SPA) — aún no instalado/configurado.
+- Laravel (última) + PHP (última). Auth: **Sanctum v4.3.2** (token para SPA) — instalado y
+  conectado al modelo `User`; falta usarlo en endpoints reales (fase 03).
 - BD: **PostgreSQL**. Tests: **PHPUnit** en `tests/` (`tests/Feature/...`).
 - Logs de errores en `storage/logs/` (estándar de Laravel).
 
