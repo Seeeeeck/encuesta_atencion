@@ -61,7 +61,7 @@
 ## Convenciones
 - Uso de camelCase para variables y funciones
 - Uso de principios SOLID
-- Almacenar logs de errores de backend en carpeta logs
+- Almacenar logs de errores de backend en `storage/logs/` (estándar de Laravel)
 - Validar cada solicitud en React Y Laravel
 - Los test del frontend deben estar en cada componente 
   ejemplo: components/FormularioEncuesta/FormularioEncuesta.tsx 
@@ -93,7 +93,7 @@
 
 ## Estado de fases (`plan/`)
 - `00-setup-entorno.md` (listo)
-- `01-backend-base.md`
+- `01-backend-base.md` (listo)
 - `02-modelo-datos.md`
 - `03-auth-backend.md`
 - `04-encuesta-backend.md`
