@@ -5,7 +5,7 @@ Implementar el modelo de datos (`docs/modelo_relacional.png`) en migraciones, mo
 con relaciones, y seeders para las preguntas fijas y un administrador inicial.
 
 ## Pasos
-1. **Migraciones** (en `database/migrations/`):
+1. **Migraciones** (en `database/migrations/`): (listo)
    - `usuario` — id, nombre (VARCHAR 100, not null), correo (VARCHAR 150, unique), clave (VARCHAR 255,
      not null, **cifrada**), edad (nullable), sexo (nullable), **rol** (VARCHAR 20, not null,
      default `'usuario'`), timestamps.

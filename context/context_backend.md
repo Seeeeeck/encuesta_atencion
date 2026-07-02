@@ -17,8 +17,45 @@
   solo en `backend/.env` (no versionado); `.env.example` documenta las claves sin password.
 - **Migraciones**: se corrió `php artisan migrate` — existen las tablas base de Laravel
   (`users`, `cache`, `jobs`) más `personal_access_tokens` (Sanctum, batch 2). Las tablas de
-  dominio (`usuario` con columna `rol`, `encuesta`, `pregunta`, `respuesta`) **aún no existen**,
-  se crean en la Fase 02 (`plan/02-modelo-datos.md`), todavía pendiente.
+  dominio (`usuario` con columna `rol`, `encuesta`, `pregunta`, `respuesta`) **aún no existen**
+  (Fase 02, `plan/02-modelo-datos.md`, en progreso — ver detalle abajo).
+- **Fase 02 (modelo de datos) en progreso**:
+  - Paso 1 (migraciones): generados los 4 archivos vacíos con `php artisan make:migration
+    create_{usuario,encuesta,pregunta,respuesta}_table`, en ese orden (dependencias FK:
+    `encuesta`→`usuario`; `respuesta`→`encuesta` y `pregunta`). **Bug encontrado y corregido**:
+    los 4 comandos corrieron en el mismo segundo, generando el **mismo timestamp** en los 4
+    nombres de archivo — Laravel ordena migraciones por nombre de archivo completo, así que con
+    timestamp idéntico caía a orden alfabético (`encuesta` < `pregunta` < `respuesta` < `usuario`),
+    lo que hubiera intentado crear `encuesta` (FK a `usuario`) **antes** de que `usuario`
+    existiera. Se renombraron los archivos con timestamps incrementales
+    (`..._201209_usuario`, `..._201210_encuesta`, `..._201211_pregunta`, `..._201212_respuesta`)
+    para forzar el orden correcto; verificado con `php artisan migrate:status` (las 4 aparecen
+    `Pending` en la secuencia correcta). Migración `usuario` ya completa y **corrida** contra
+    Postgres (`id`, `nombre` varchar(100), `correo` varchar(150) unique, `clave` varchar(255),
+    `edad` nullable — Postgres lo mapea a `smallint` porque no tiene `TINYINT` nativo —, `sexo`
+    varchar(20) nullable, `rol` varchar(20) default `'usuario'`, timestamps). Verificado con
+    `information_schema.columns` y `pg_indexes` (constraint `usuario_correo_unique` confirmado).
+    Migración `encuesta` también completa y corrida (`id`, `id_usuario` FK → `usuario` con
+    **`ON DELETE CASCADE`** — requerido por `plan/05-admin-backend.md`, que dice que eliminar un
+    usuario debe borrar en cascada su encuesta/respuestas —, `is_ok` boolean default `false`,
+    timestamps). Verificado con `information_schema` (columnas y la regla `delete_rule` del FK).
+    Migración `pregunta` también completa y corrida: `id`, `pregunta_texto` varchar(255),
+    `tipo` **`char(1)`** con `CHECK (tipo IN ('P', 'N'))` agregado vía `DB::statement` (el
+    `Blueprint` de esta versión de Laravel no tiene helper fluido `->check()`), timestamps.
+    Probado insertando `tipo = 'X'` (rechazado con `SQLSTATE[23514]`) y `tipo = 'P'` (aceptado);
+    fila de prueba eliminada después.
+  - **Migración `respuesta` completa y corrida** (última de las 4): `id`, `id_encuesta` FK →
+    `encuesta` con **`ON DELETE CASCADE`** (necesario para que la cascada `usuario`→`encuesta`
+    no falle por respuestas huérfanas), `id_pregunta` FK → `pregunta` con `ON DELETE NO ACTION`
+    (sin requisito de cascada documentado; preguntas son un set fijo por seeder), `respuesta`
+    `smallint` con `CHECK (respuesta BETWEEN 1 AND 5)` vía `DB::statement`, índice único
+    compuesto `(id_encuesta, id_pregunta)`. Probado end-to-end con datos reales: `respuesta = 6`
+    y `= 0` rechazados, `= 3` aceptado, duplicado `(id_encuesta, id_pregunta)` rechazado por el
+    índice único. Datos de prueba limpiados de las 4 tablas al terminar.
+  - **Las 4 migraciones del paso 1 de la Fase 02 están completas, corridas y verificadas contra
+    Postgres real** (no solo el esqueleto). Falta el paso 2 (modelos Eloquent) y el paso 3
+    (seeders).
+  - Pasos 2 (modelos Eloquent) y 3 (seeders) **pendientes**.
 - **Fase 01 (backend base) en progreso** — pasos 1, 2 y 3 de `plan/01-backend-base.md` `(listo)`:
   - Paso 1: conexión PostgreSQL verificada (ya venía configurada desde Fase 00).
   - Paso 2: **Sanctum instalado** (`laravel/sanctum` v4.3.2 vía Composer). Publicado
