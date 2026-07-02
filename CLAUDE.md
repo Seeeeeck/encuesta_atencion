@@ -109,6 +109,17 @@
 - La documentación está en /docs
 - El contexto esta en /context
 
+## Inicio de sesión - IMPORTANTE
+- Cada vez que empiece una sesión nueva (contexto en blanco), antes de hacer
+  cualquier tarea lee completos `/context/context_backend.md` y
+  `/context/context_frontend.md`.
+- Tenlos en cuenta durante toda la sesión: qué fases/pasos están (listo), qué
+  decisiones ya se tomaron, qué falta.
+- No es opcional ni hace falta que te lo pida cada vez: aplica siempre al
+  arrancar, igual que la regla principal de arriba.
+- Si el contexto contradice lo que ves en el código real, confía en el código
+  y avísame para corregir el contexto (no lo asumas como verdad ciega).
+
 ## Trabajar con contexto y documentación - IMPORTANTE
 - Cada vez que haya cambios(pequeños,medianos,grandes) 
   necesito que actualices el /context  para mantener
