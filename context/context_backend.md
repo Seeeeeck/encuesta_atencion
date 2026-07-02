@@ -33,7 +33,8 @@
 - **usuario**: id_usuario, nombre, correo (unique), clave (cifrada/hash), edad (null), sexo (null),
   **rol** (`usuario` | `admin`, default `usuario`).
 - **encuesta**: id_encuesta, id_usuario (FK), is_ok (bool, default false). 1 por usuario.
-- **pregunta**: id_pregunta, pregunta_texto. Set fijo (seeder).
+- **pregunta**: id_pregunta, pregunta_texto, **tipo** (CHAR(1), `'P'`=positiva | `'N'`=negativa,
+  not null, CHECK IN ('P','N')). Set fijo (seeder).
 - **respuesta**: id_respuesta, id_encuesta (FK), id_pregunta (FK), respuesta (SMALLINT, 1-5,
   CHECK). Único (encuesta, pregunta).
 

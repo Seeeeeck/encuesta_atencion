@@ -22,6 +22,7 @@ digraph modelo_relacional {
       <TR><TD BGCOLOR="#f8dcb0"><FONT POINT-SIZE="16" COLOR="#5c3a0c"><B>pregunta</B></FONT></TD></TR>
       <TR><TD BGCOLOR="#fdf0dd" ALIGN="LEFT"><FONT COLOR="#7a4f10">id_pregunta BIGINT &#8226; PK</FONT></TD></TR>
       <TR><TD BGCOLOR="#fdf0dd" ALIGN="LEFT"><FONT COLOR="#7a4f10">pregunta_texto VARCHAR(255)</FONT></TD></TR>
+      <TR><TD BGCOLOR="#fdf0dd" ALIGN="LEFT"><FONT COLOR="#7a4f10">tipo CHAR(1) &#8226; NOT NULL &#8226; CHECK IN ('P','N')</FONT></TD></TR>
     </TABLE>>];
 
   encuesta [label=<

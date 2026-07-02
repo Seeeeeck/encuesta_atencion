@@ -20,7 +20,7 @@ ve métricas y gestiona usuarios.
 ### Modelo de datos (ver `docs/modelo_relacional.png`)
 - `usuario` — id_usuario, nombre, correo (unique), clave (cifrada), edad, sexo, **rol** (`usuario`/`admin`).
 - `encuesta` — id_encuesta, id_usuario (FK), is_ok (bool, default false). Una instancia por usuario.
-- `pregunta` — id_pregunta, pregunta_texto. Set fijo, precargado por seeder.
+- `pregunta` — id_pregunta, pregunta_texto, **tipo** (CHAR(1), `'P'`=positiva/`'N'`=negativa, CHECK IN ('P','N')). Set fijo, precargado por seeder.
 - `respuesta` — id_respuesta, id_encuesta (FK), id_pregunta (FK), respuesta (SMALLINT, valor 1–5, CHECK 1..5).
 
 ## Convenciones clave (de `CLAUDE.md`)

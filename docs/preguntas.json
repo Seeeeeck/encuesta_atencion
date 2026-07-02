@@ -1,0 +1,63 @@
+{
+  "encuesta": "Impacto de sistemas de recompensa en la atención",
+  "escala": {
+    "min": 1,
+    "max": 5,
+    "etiquetas": {
+      "1": "Totalmente en desacuerdo",
+      "5": "Totalmente de acuerdo"
+    }
+  },
+  "preguntas": [
+    {
+      "id": 1,
+      "texto": "Suelo revisar mis redes sociales o notificaciones sin haber decidido conscientemente hacerlo.",
+      "direccion": "negativa"
+    },
+    {
+      "id": 2,
+      "texto": "Cuando termino de usar el celular o de jugar, puedo retomar rápidamente la concentración en lo que estaba haciendo.",
+      "direccion": "positiva"
+    },
+    {
+      "id": 3,
+      "texto": "Siento la necesidad de mantener rachas (streaks), abrir loot o revisar notificaciones aunque no tenga ganas reales de usar la app.",
+      "direccion": "negativa"
+    },
+    {
+      "id": 4,
+      "texto": "Puedo pasar varias horas sin revisar mis redes o notificaciones sin sentir ansiedad.",
+      "direccion": "positiva"
+    },
+    {
+      "id": 5,
+      "texto": "Siento que soy yo quien decide cuándo y cuánto uso mis redes sociales o videojuegos, no la aplicación.",
+      "direccion": "positiva"
+    },
+    {
+      "id": 6,
+      "texto": "Cuando he intentado reducir mi tiempo en redes o videojuegos, me ha costado mantenerlo.",
+      "direccion": "negativa"
+    },
+    {
+      "id": 7,
+      "texto": "El scroll infinito o el diseño de las apps que uso hace que pierda la noción del tiempo.",
+      "direccion": "negativa"
+    },
+    {
+      "id": 8,
+      "texto": "Puedo concentrarme en actividades largas (leer, estudiar, trabajar) sin sentir el impulso de revisar el celular.",
+      "direccion": "positiva"
+    },
+    {
+      "id": 9,
+      "texto": "Cuando estoy sin mi celular o sin poder jugar, me siento incómodo/a o inquieto/a.",
+      "direccion": "negativa"
+    },
+    {
+      "id": 10,
+      "texto": "Considero que el uso de redes sociales o videojuegos no afecta mi capacidad de concentración en el día a día.",
+      "direccion": "positiva"
+    }
+  ]
+}

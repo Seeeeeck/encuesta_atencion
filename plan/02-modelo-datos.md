@@ -10,7 +10,8 @@ con relaciones, y seeders para las preguntas fijas y un administrador inicial.
      not null, **cifrada**), edad (nullable), sexo (nullable), **rol** (VARCHAR 20, not null,
      default `'usuario'`), timestamps.
    - `encuesta` — id, id_usuario (FK → usuario), is_ok (boolean, default false), timestamps.
-   - `pregunta` — id, pregunta_texto (VARCHAR 255), timestamps.
+   - `pregunta` — id, pregunta_texto (VARCHAR 255), **tipo** (CHAR(1), not null, con CHECK IN
+     ('P','N') — `'P'`=positiva, `'N'`=negativa), timestamps.
    - `respuesta` — id, id_encuesta (FK → encuesta), id_pregunta (FK → pregunta), respuesta (SMALLINT
      / `smallInteger`, not null, con **CHECK `respuesta BETWEEN 1 AND 5`** — en Postgres vía `->check(...)`
      o `DB::statement` en el mismo migration según lo que soporte la versión de Laravel), timestamps.
@@ -21,7 +22,8 @@ con relaciones, y seeders para las preguntas fijas y un administrador inicial.
    - `clave` en `$hidden` y casteada con hash (cifrado, nunca texto plano).
    - En `Respuesta`, castear `respuesta` a `'integer'` en `$casts`.
 3. **Seeders**:
-   - `PreguntaSeeder` — preguntas fijas de la encuesta (definir lista con el usuario).
+   - `PreguntaSeeder` — carga las preguntas fijas leyendo `docs/preguntas.json` (fuente de la lista),
+     cada una con su `pregunta_texto` y su `tipo` (`'P'`=positiva / `'N'`=negativa).
    - `AdminSeeder` — 1 usuario con `rol = 'admin'` (credenciales desde `.env`, no hardcodear).
 
 ## Archivos a tocar
