@@ -98,9 +98,9 @@ Sin comando por ahora
 - El contexto esta en /context
 
 ## Inicio de sesión - IMPORTANTE
-- Cada vez que empiece una sesión nueva (contexto en blanco), antes de hacer
-  cualquier tarea lee completos `/context/context_backend.md` y
-  `/context/context_frontend.md`.
+- Cada vez que empiece una sesión nueva (contexto en blanco) **o se use el
+  comando `/clear`**, antes de hacer cualquier tarea lee completos
+  `/context/context_backend.md` y `/context/context_frontend.md`.
 - Tenlos en cuenta durante toda la sesión: qué fases/pasos están (listo), qué
   decisiones ya se tomaron, qué falta.
 - No es opcional ni hace falta que te lo pida cada vez: aplica siempre al
