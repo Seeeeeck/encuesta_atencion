@@ -66,6 +66,13 @@
     nuestro `render()`. Corregido en `withMiddleware()` con
     `$middleware->redirectGuestsTo(fn () => null)`, ya que esta app es 100% API y nunca debe
     intentar redirigir a un guest. Verificado con y sin header `Accept: application/json`.
+  - **Ajuste posterior**: la rama de `AuthenticationException` (401) tenía el mensaje
+    hardcodeado a `"No autenticado."`, ignorando cualquier mensaje personalizado de la
+    excepción. Se corrigió para respetar `$e->getMessage()` (igual que `AuthorizationException`
+    ya hacía), traduciendo únicamente el mensaje por defecto de Laravel en inglés
+    (`"Unauthenticated."`) a español; cualquier mensaje custom se respeta tal cual. Verificado
+    con ambos casos (default vía `auth:sanctum` sin token, y una excepción lanzada a mano con
+    mensaje propio).
   - **Fase 01 completa** (los 7 pasos de `plan/01-backend-base.md` en `(listo)`).
 - **Logs**: se usa `storage/logs/laravel.log` (canal `single` por defecto de Laravel). No se
   creó una carpeta `/logs` aparte — el paso 5 de la Fase 00 se marcó listo así.

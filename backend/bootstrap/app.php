@@ -38,9 +38,15 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if ($e instanceof AuthenticationException) {
-                return response()->json([
-                    'message' => 'No autenticado.',
-                ], 401);
+                $message = $e->getMessage();
+
+                // El mensaje por defecto de Laravel viene en inglés ("Unauthenticated.");
+                // se traduce solo ese caso puntual, cualquier otro mensaje se respeta tal cual.
+                if ($message === '' || $message === 'Unauthenticated.') {
+                    $message = 'No autenticado.';
+                }
+
+                return response()->json(['message' => $message], 401);
             }
 
             if ($e instanceof AuthorizationException) {
