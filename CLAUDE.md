@@ -94,7 +94,7 @@
 ## Estado de fases (`plan/`)
 - `00-setup-entorno.md` (listo)
 - `01-backend-base.md` (listo)
-- `02-modelo-datos.md`
+- `02-modelo-datos.md` (listo)
 - `03-auth-backend.md`
 - `04-encuesta-backend.md`
 - `05-admin-backend.md`

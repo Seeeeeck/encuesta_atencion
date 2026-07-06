@@ -19,8 +19,8 @@
   `personal_access_tokens` (Sanctum, batch 2). **`users`, `password_reset_tokens` y `sessions`
   se eliminaron** (ver más abajo, decisión `User`→`Usuario`). Las tablas de dominio (`usuario`
   con columna `rol`, `encuesta`, `pregunta`, `respuesta`) ya existen
-  (Fase 02, `plan/02-modelo-datos.md`, en progreso — ver detalle abajo).
-- **Fase 02 (modelo de datos) en progreso**:
+  (Fase 02, `plan/02-modelo-datos.md`, **completa** — ver detalle abajo).
+- **Fase 02 (modelo de datos) completa**:
   - Paso 1 (migraciones): generados los 4 archivos vacíos con `php artisan make:migration
     create_{usuario,encuesta,pregunta,respuesta}_table`, en ese orden (dependencias FK:
     `encuesta`→`usuario`; `respuesta`→`encuesta` y `pregunta`). **Bug encontrado y corregido**:
@@ -100,7 +100,55 @@
     `pregunta(): belongsTo(Pregunta::class, 'id_pregunta')`.
   - **Paso 2 (modelos Eloquent) completo**: `Usuario`, `Encuesta`, `Pregunta` y `Respuesta`
     creados con sus relaciones cruzadas verificadas.
-  - Paso 3 (seeders) **pendiente**.
+  - Paso 3 (seeders) **en progreso**:
+    - `database/seeders/PreguntaSeeder.php` creado: lee `docs/preguntas.json` con
+      `base_path('../docs/preguntas.json')` + `json_decode(..., true)`. **Bug encontrado y
+      corregido**: `base_path()` apunta a la raíz de la app Laravel (`backend/`), no a la raíz
+      del repo — como `docs/` vive un nivel arriba (hermano de `backend/`, no dentro), hacía
+      falta el `../` para subir un nivel; sin él tiraba `file_get_contents(): Failed to open
+      stream: No such file or directory` al buscar `backend/docs/preguntas.json` (que no
+      existe). Itera `$datos['preguntas']`
+      y mapea `direccion` (`'positiva'`/`'negativa'` del JSON) a `tipo` (`'P'`/`'N'` del modelo)
+      con un `match`, creando cada `Pregunta` con `pregunta_texto` y `tipo`. Importa
+      `use App\Models\Pregunta;` porque el seeder vive en `namespace Database\Seeders` (distinto
+      al `namespace App\Models` de `Pregunta` — mismo namespace no requiere `use`, namespace
+      distinto sí). Registrado en `DatabaseSeeder::run()` con
+      `$this->call(PreguntaSeeder::class)` (sin `use` porque ambos comparten
+      `namespace Database\Seeders`).
+    - `database/seeders/AdminSeeder.php` creado: `Usuario::create()` con `nombre` fijo
+      (`'Administrador'`, no sensible), `correo` y `clave` leídos con `env('ADMIN_EMAIL')` /
+      `env('ADMIN_PASSWORD')` (nunca hardcodeados), `rol = 'admin'`. La `clave` se hashea sola
+      gracias al cast `'hashed'` de `Usuario` (no se llama a ninguna función de hash a mano).
+      Agregadas `ADMIN_EMAIL` y `ADMIN_PASSWORD` (vacías) en `.env.example`; valores reales
+      cargados en `backend/.env` (no versionado). Registrado en `DatabaseSeeder::run()` con
+      `$this->call(AdminSeeder::class)` después de `PreguntaSeeder::class`.
+  - **Paso 3 (seeders) completo**: `PreguntaSeeder` y `AdminSeeder` implementados y registrados
+    en `DatabaseSeeder`. Verificado con `php artisan migrate:fresh --seed` contra Postgres real:
+    1 usuario (admin, `correo = fz4mbelli@gmail.com`, `rol = 'admin'`), 10 preguntas, `encuesta`
+    y `respuesta` en 0 (se llenan en runtime, no por seeder).
+  - **Tests de la Fase 02**:
+    - **Entorno de test cambiado de SQLite en memoria a Postgres real**: las migraciones de
+      `pregunta` y `respuesta` usan `DB::statement('ALTER TABLE ... ADD CONSTRAINT ... CHECK
+      ...')`, sintaxis específica de Postgres que SQLite no soporta (su `ALTER TABLE` no admite
+      agregar constraints así). Correr `RefreshDatabase` contra SQLite en memoria rompía al
+      migrar. Se creó una BD de test separada `encuesta_simple_test` (mismo rol `encuesta_user`,
+      que no tiene privilegio `CREATEDB` — la creó el usuario a mano con superusuario) y se
+      cambió `phpunit.xml`: `DB_CONNECTION=pgsql`, `DB_HOST=127.0.0.1`, `DB_PORT=5432`,
+      `DB_DATABASE=encuesta_simple_test`, `DB_USERNAME=encuesta_user`,
+      `DB_PASSWORD=encuesta_dev_2026`. También se agregaron `ADMIN_EMAIL`/`ADMIN_PASSWORD` de
+      prueba en `phpunit.xml` (valores ficticios, no los reales de `.env`) para que
+      `AdminSeeder` tenga qué leer en el entorno de testing.
+    - `tests/Feature/Database/SeedersTest.php`: usa `RefreshDatabase` + `$this->seed()` (corre
+      `DatabaseSeeder` completo) y verifica `Pregunta::count() === 10` y que existe exactamente
+      1 `Usuario` con `rol = 'admin'` cuyo `correo` coincide con `env('ADMIN_EMAIL')`.
+    - `tests/Feature/Models/RelacionesTest.php`: 7 tests cubriendo las 4 relaciones cruzadas
+      (`Usuario::encuestas`, `Encuesta::usuario`, `Encuesta::respuestas`, `Pregunta::respuestas`,
+      `Respuesta::encuesta`/`Respuesta::pregunta`) y las 2 cascadas de borrado esperadas
+      (eliminar `Usuario` borra su `Encuesta`; eliminar `Encuesta` borra sus `Respuesta`), usando
+      `assertModelMissing()`.
+    - Suite completa verificada: `php artisan test` → 10 tests, 13 assertions, todos en verde.
+  - **Fase 02 completa**: migraciones, modelos, seeders y tests, verificados contra Postgres
+    real (dev y test).
 - **Fase 01 (backend base) en progreso** — pasos 1, 2 y 3 de `plan/01-backend-base.md` `(listo)`:
   - Paso 1: conexión PostgreSQL verificada (ya venía configurada desde Fase 00).
   - Paso 2: **Sanctum instalado** (`laravel/sanctum` v4.3.2 vía Composer). Publicado

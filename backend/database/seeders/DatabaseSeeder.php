@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // PreguntaSeeder y AdminSeeder se llaman acá cuando se implementen (Fase 02, paso 3).
+        $this->call(PreguntaSeeder::class);
+        $this->call(AdminSeeder::class);
     }
 }
