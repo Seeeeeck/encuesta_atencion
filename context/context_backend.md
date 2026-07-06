@@ -15,9 +15,10 @@
   propiedad del rol dedicado `encuesta_user` (no se usa el superusuario del sistema, por
   buena práctica de menor privilegio). Conexión por TCP `127.0.0.1:5432`. Credenciales reales
   solo en `backend/.env` (no versionado); `.env.example` documenta las claves sin password.
-- **Migraciones**: se corrió `php artisan migrate` — existen las tablas base de Laravel
-  (`users`, `cache`, `jobs`) más `personal_access_tokens` (Sanctum, batch 2). Las tablas de
-  dominio (`usuario` con columna `rol`, `encuesta`, `pregunta`, `respuesta`) **aún no existen**
+- **Migraciones**: se corrió `php artisan migrate` — existen `cache`, `jobs` (de Laravel) más
+  `personal_access_tokens` (Sanctum, batch 2). **`users`, `password_reset_tokens` y `sessions`
+  se eliminaron** (ver más abajo, decisión `User`→`Usuario`). Las tablas de dominio (`usuario`
+  con columna `rol`, `encuesta`, `pregunta`, `respuesta`) ya existen
   (Fase 02, `plan/02-modelo-datos.md`, en progreso — ver detalle abajo).
 - **Fase 02 (modelo de datos) en progreso**:
   - Paso 1 (migraciones): generados los 4 archivos vacíos con `php artisan make:migration
@@ -53,16 +54,62 @@
     y `= 0` rechazados, `= 3` aceptado, duplicado `(id_encuesta, id_pregunta)` rechazado por el
     índice único. Datos de prueba limpiados de las 4 tablas al terminar.
   - **Las 4 migraciones del paso 1 de la Fase 02 están completas, corridas y verificadas contra
-    Postgres real** (no solo el esqueleto). Falta el paso 2 (modelos Eloquent) y el paso 3
-    (seeders).
-  - Pasos 2 (modelos Eloquent) y 3 (seeders) **pendientes**.
+    Postgres real** (no solo el esqueleto).
+  - Paso 2 (modelos Eloquent) — **en progreso**, empezó por `Usuario` (`app/Models/Usuario.php`):
+    extiende `Authenticatable` (no un modelo genérico), usa `HasApiTokens` (Sanctum) y
+    `HasFactory`, `$table = 'usuario'` explícito (Eloquent adivinaría `usuarios` por defecto,
+    que no existe), `$fillable` con las columnas de negocio, `clave` en `$hidden` y con
+    cast `'hashed'` (nunca texto plano), y **`$authPasswordName = 'clave'`** — necesario porque
+    `Authenticatable` espera por defecto una columna `password`, y la nuestra se llama `clave`
+    (sin esto, el login de la Fase 03 fallaría en silencio). Incluye relación
+    `encuestas(): hasMany(Encuesta::class, 'id_usuario')`.
+    **Decisión importante que motivó una limpieza**: se detectó que el proyecto tenía **dos
+    tablas de "usuario" en paralelo** — la `users` que trae Laravel de fábrica (con
+    `HasApiTokens` ya agregado en Fase 01, antes de que existiera `usuario`) y la `usuario` de
+    dominio real que usa `plan/03-auth-backend.md`. Se confirmó con el usuario: `Usuario`
+    (tabla `usuario`) es el único modelo autenticable. Se eliminó `users`,
+    `password_reset_tokens` y `sessions` (revertidas manualmente vía `Schema::dropIfExists` +
+    limpieza de su fila en la tabla `migrations`, porque compartían *batch* con `cache`/`jobs`
+    que sí se conservan; no se pudo usar `migrate:rollback --path` por eso), se borró el archivo
+    de esa migración, `app/Models/User.php` y `database/factories/UserFactory.php`, y se
+    corrigieron las referencias en `config/auth.php` (`providers.users.model` →
+    `Usuario::class`) y `database/seeders/DatabaseSeeder.php` (ya no llama a `User::factory()`).
+    Verificado en runtime: `Usuario::create()` usa la tabla `usuario`, hashea `clave`
+    automáticamente, la oculta en `toArray()`, tiene `createToken()` (Sanctum) disponible, y
+    `getAuthPassword()` lee de `clave` correctamente. Nota aparte (no bug): justo después de
+    `create()`, el objeto en memoria no refleja el `DEFAULT` de Postgres para `rol` (Eloquent con
+    Postgres solo hace `RETURNING` del `id`, no de toda la fila) — hace falta `->refresh()` o
+    una relectura para verlo; el valor real en la base sí es correcto desde el primer momento.
+  - `app/Models/Encuesta.php` creado: extiende `Model` (no se autentica), `$table = 'encuesta'`,
+    `$fillable = ['id_usuario', 'is_ok']`, `casts()` con `'is_ok' => 'boolean'`, relación
+    `usuario(): belongsTo(Usuario::class, 'id_usuario')` (inversa de `Usuario::encuestas()`) y
+    `respuestas(): hasMany(Respuesta::class, 'id_encuesta')` (el segundo argumento es el FK que
+    vive en la tabla `respuesta`, no en `encuesta`). Sin `$hidden` (no tiene datos sensibles).
+    Faltan los modelos `Pregunta` y `Respuesta`.
+  - `app/Models/Pregunta.php` creado: extiende `Model`, `$table = 'pregunta'`,
+    `$fillable = ['pregunta_texto', 'tipo']` (no incluye `id`, autoincremental). Sin `casts()`
+    para `tipo`: Postgres lo guarda como `char(1)` pero Eloquent lo trae como `string` normal de
+    PHP (no existe tipo `char` nativo en PHP, no hace falta convertir nada). Relación
+    `respuestas(): hasMany(Respuesta::class, 'id_pregunta')`.
+  - `app/Models/Respuesta.php` creado: extiende `Model`, `$table = 'respuesta'`,
+    `$fillable = ['id_encuesta', 'id_pregunta', 'respuesta']`, `casts()` con
+    `'respuesta' => 'integer'` (nota: el cast **no** valida el rango 1-5 — eso ya lo garantiza el
+    `CHECK` de la migración a nivel BD; el cast solo asegura que PHP reciba un `int` real y no un
+    string, relevante para sumas/promedios en la Fase 05 de métricas). Relaciones
+    `encuesta(): belongsTo(Encuesta::class, 'id_encuesta')` y
+    `pregunta(): belongsTo(Pregunta::class, 'id_pregunta')`.
+  - **Paso 2 (modelos Eloquent) completo**: `Usuario`, `Encuesta`, `Pregunta` y `Respuesta`
+    creados con sus relaciones cruzadas verificadas.
+  - Paso 3 (seeders) **pendiente**.
 - **Fase 01 (backend base) en progreso** — pasos 1, 2 y 3 de `plan/01-backend-base.md` `(listo)`:
   - Paso 1: conexión PostgreSQL verificada (ya venía configurada desde Fase 00).
   - Paso 2: **Sanctum instalado** (`laravel/sanctum` v4.3.2 vía Composer). Publicado
     `config/sanctum.php` y la migración `create_personal_access_tokens_table` (publicando por
     el provider completo, no solo el tag `sanctum-config`, ya que la migración usa un tag
-    separado). Trait `HasApiTokens` agregado a `app/Models/User.php` (verificado:
-    `createToken()` disponible en runtime).
+    separado). Trait `HasApiTokens` agregado en su momento a `app/Models/User.php` (verificado:
+    `createToken()` disponible en runtime). **Desactualizado**: `User.php` se eliminó después
+    (Fase 02, ver arriba) — el trait ahora vive en `app/Models/Usuario.php`, que es el modelo
+    autenticable real.
   - Paso 3: creada `app/Http/Controllers/Api/` (vacía, se puebla en fases siguientes). Creado
     `routes/api.php` (vacío por ahora — el endpoint de salud es el paso 6). Registrado
     `api: __DIR__.'/../routes/api.php'` en `bootstrap/app.php` dentro de `withRouting` (antes
