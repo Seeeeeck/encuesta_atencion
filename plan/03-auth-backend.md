@@ -13,10 +13,12 @@ con validación server-side y emisión de token Sanctum.
 - `DELETE /me` — eliminar la propia cuenta (requiere auth).
 
 ## Pasos
-1. `AuthController` (Api) con acciones register/login/logout.
+1. `AuthController` (Api) con acciones register/login/logout. (listo)
 2. `PerfilController` (Api) con show/update/destroy para `/me`.
 3. **Form Requests** de validación: correo válido y único, clave con mínimo de seguridad,
    edad numérica/rango, sexo dentro de valores permitidos (incluye "prefiero no responder").
+   `RegisterRequest` y `LoginRequest` ya creados (adelantados durante el paso 1); falta
+   `UpdatePerfilRequest` cuando se haga el paso 2.
 4. Hash de la clave al crear/actualizar. Revocar tokens al eliminar cuenta.
 5. Registrar rutas en `routes/api.php` con middleware `auth:sanctum` donde corresponda.
 
@@ -33,6 +35,10 @@ con validación server-side y emisión de token Sanctum.
 ## Tests
 - `tests/Feature/Auth/RegisterTest.php`, `LoginTest.php`, `LogoutTest.php`.
 - `tests/Feature/Auth/PerfilTest.php` — editar y eliminar cuenta.
+- **Nota (paso 1, ya hecho)**: los tests reales quedaron en `tests/Feature/Api/RegisterTest.php`
+  y `tests/Feature/Api/LoginTest.php` (no `tests/Feature/Auth/...` como decía este plan), más
+  `tests/Feature/Request/RegisterRequestTest.php` para las reglas de validación aisladas. Falta
+  un test de Feature para `/api/logout`.
 
 ## Notas
 - Validar también en frontend (fase 07), pero la **fuente de verdad es el backend**.
