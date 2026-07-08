@@ -149,6 +149,133 @@
     - Suite completa verificada: `php artisan test` → 10 tests, 13 assertions, todos en verde.
   - **Fase 02 completa**: migraciones, modelos, seeders y tests, verificados contra Postgres
     real (dev y test).
+- **Fase 03 (auth backend) en progreso** — trabajando en rama `auth-backend`. Paso 1 de
+  `plan/03-auth-backend.md`:
+  - `app/Http/Controllers/Api/AuthController.php` creado con `register()`, `login()` y
+    `logout()` como **esqueletos** (solo `TODO`, sin lógica todavía — modo tutor, el usuario
+    completa el cuerpo). Firma con `Illuminate\Http\Request $request` genérico por ahora; se
+    reemplaza por Form Requests dedicados (`RegisterRequest`, `LoginRequest`) en el paso 3 del
+    plan, no antes.
+  - Rutas registradas en `routes/api.php`: `POST /register` y `POST /login` públicas;
+    `POST /logout` dentro de `Route::middleware('auth:sanctum')->group(...)`.
+  - Diseño de auth acordado: **Sanctum en modo token** (Personal Access Tokens vía
+    `createToken()->plainTextToken`), no el modo cookie/SPA — el frontend manda
+    `Authorization: Bearer <token>` en cada request. `login()` va a usar
+    `Auth::attempt(['correo' => ..., 'password' => ...])`: la key `'password'` es fija en el
+    array de credenciales (hardcodeada en
+    `Illuminate\Auth\EloquentUserProvider::validateCredentials`, busca literalmente esa key sin
+    importar el nombre real de la columna); lo que sí lee `Usuario::$authPasswordName = 'clave'`
+    es `getAuthPassword()`, usado internamente para comparar el hash contra la columna `clave`
+    real. Si se usa cualquier otra key (p.ej. `'clave'`) en el array, el intento falla en
+    silencio (sin excepción) porque `retrieveByCredentials` no descarta esa key del `WHERE`
+    (comparando texto plano contra un hash) y `validateCredentials` no encuentra
+    `$credentials['password']`.
+  - Pendiente en el paso 1: rellenar los `TODO` de los 3 métodos del controller.
+  - `app/Http/Requests/RegisterRequest.php` creado con `php artisan make:request RegisterRequest`
+    (adelantando parte del paso 3 del plan, a pedido del usuario, mientras el paso 1 sigue sin
+    cerrar). `authorize()` cambiado a `true` (cualquier visitante puede registrarse). `rules()`
+    completo:
+    - `nombre`: required, string, min:3, max:100.
+    - `correo`: required, email, unique:usuario,correo.
+    - `clave`: required, string, min:5, max:100, regex con al menos 1 mayúscula (`/[A-Z]/`) y
+      al menos 1 símbolo/puntuación (`/[\W_]/`).
+    - `edad`: nullable, integer, min:1, max:200.
+    - `sexo`: nullable, in:M,F,N/R (valores exactos acordados: `M`, `F`, `N/R` — este último
+      representa "prefiero no responder" de `docs/requisitos_funcionales.md`).
+    - **`rol` NO está en este Request a propósito**: el registro público nunca debe aceptar ni
+      validar `rol` del cliente (se sigue fijando `'usuario'` a mano en el controller). El
+      usuario decidió que la creación de administradores será un Request/flujo aparte más
+      adelante (`RegisterAdminRequest`, sin fase asignada todavía — anotar cuando se defina en
+      qué fase entra).
+    - `AuthController::register()` ya tipa `RegisterRequest $request` (antes `Request`
+      genérico) — la validación corre sola antes de entrar al método. TODO actualizado para usar
+      `$request->validated()` (excluye automáticamente cualquier campo fuera de `rules()`, como
+      `rol`, capa extra sobre fijarlo a mano). El cuerpo del método (los 3 TODO) quedó envuelto en
+      un `try/catch (\Throwable $e)`: el `catch` ya está implementado — llama a `Log::error()` con
+      contexto (`controlador` = `self::class`, `metodo` = `__FUNCTION__`, `fecha_hora` =
+      `now()->toDateTimeString()`, `mensaje` = `$e->getMessage()`) y devuelve `response()->json`
+      genérico 500. Nota: el timestamp de `Log::error()` ya es automático en cada línea de
+      `storage/logs/laravel.log` (formato `[fecha] canal.NIVEL: ...`); `fecha_hora` en el
+      contexto es redundante para lectura humana pero útil si estos logs se estructuran/exportan
+      más adelante.
+    - **`AuthController::register()` completo**: dentro del `try`, crea el usuario
+      (`$datos = $request->validated(); $datos['rol'] = 'usuario'; $usuario =
+      Usuario::create($datos);`), genera el token (`$usuario->createToken('auth-token')
+      ->plainTextToken`) y responde `response()->json(['token' => $token, 'usuario' =>
+      $usuario], 201)`. `clave` no aparece en el JSON porque está en `$hidden` del modelo
+      (serialización automática).
+    - `tests/Feature/Api/RegisterTest.php` creado (5 tests, todos en verde): test end-to-end
+      contra el endpoint real (`postJson('/api/register', ...)`), a diferencia de
+      `RegisterRequestTest` que solo probaba las `rules()` aisladas. Cubre: 201 con estructura
+      `token` + `usuario` (y `usuario.clave` ausente), que se genera un token Sanctum real
+      (`$usuario->tokens` cuenta 1), que `rol` no se puede forzar a `admin` desde el body
+      (siempre queda `usuario`), correo duplicado → 422, campos obligatorios faltantes → 422.
+      Usa `RefreshDatabase`.
+    - Suite completa verificada tras estos cambios: `php artisan test` → **30 tests, 48
+      assertions, todos en verde**.
+    - Faltan `login()` y `logout()` del `AuthController` (siguen en TODO, sin tocar).
+    - `app/Http/Requests/LoginRequest.php` creado con `php artisan make:request LoginRequest`.
+      `authorize()` en `true` (cualquier visitante no autenticado puede intentar loguearse).
+      `rules()` completo: `correo` => required, email, max:150; `clave` => required, string,
+      max:255 (los máximos coinciden con el tamaño real de columnas `correo varchar(150)` /
+      `clave varchar(255)`; decisión explícita del usuario: **sin** `min`/`regex` de complejidad
+      acá — esas restricciones ya se validaron en el registro, login solo necesita que los
+      campos vengan y respeten el límite de columna). `messages()` completo con textos en
+      español (5 combinaciones: `correo.required/email/max`, `clave.required/max`).
+    - `AuthController::login()` ya tipa `LoginRequest $request` (antes `Request` genérico) y
+      quedó envuelto en el mismo patrón `try/catch (\Throwable $e)` que `register()`: el `catch`
+      loguea con `Log::error('Error al iniciar sesión', [...])` (mismo contexto: `controlador`,
+      `metodo`, `fecha_hora`, `mensaje`) y devuelve `response()->json` genérico 500. El cuerpo
+      del `try` sigue en los 4 TODO originales (`Auth::attempt`, manejo de fallo 401, generar
+      token, response 200) — sin escribir todavía.
+    - Dentro del `try` de `login()`, paso 1 de 4 completo: `$autenticado = Auth::attempt(['correo'
+      => $request->correo, 'password' => $request->clave]);`. Recordatorio ya documentado más
+      arriba: la key `'password'` es fija (la busca `EloquentUserProvider`), no `'clave'` —
+      `Usuario::$authPasswordName` es lo que traduce la comparación a la columna real. Paso 2
+      completo: `if (! $autenticado) { return response()->json(['message' => 'Credenciales
+      inválidas.'], 401); }` (early return). Paso 3 completo: `$usuario = Auth::user(); $token =
+      $usuario->createToken('auth-token')->plainTextToken;`.
+    - **`AuthController::login()` completo**: paso 4 = `response()->json(['token' => $token,
+      'usuario' => $usuario], 200)`.
+    - `tests/Feature/Api/LoginTest.php` creado (5 tests, todos en verde), mismo patrón que
+      `RegisterTest`: end-to-end contra `postJson('/api/login', ...)` con `RefreshDatabase`.
+      Cubre: 200 con estructura `token` + `usuario` (y `usuario.clave` ausente), que se genera un
+      token Sanctum real, clave incorrecta → 401, correo inexistente → 401, campos obligatorios
+      faltantes → 422.
+    - Suite completa verificada tras estos cambios: `php artisan test` → **35 tests, 63
+      assertions, todos en verde**.
+    - **`logout()` del `AuthController` completo**: mismo patrón `try/catch` + `Log::error()`
+      (mensaje `'Error al cerrar sesión'`). Dentro del `try`:
+      `$request->user()->currentAccessToken()->delete();` (escrito por el usuario, revoca solo
+      el token de esta request) seguido de
+      `return response()->json(['message' => 'Sesión cerrada correctamente.'], 200);`.
+    - **Paso 1 de `plan/03-auth-backend.md` completo**: `AuthController` con `register()`,
+      `login()` y `logout()` totalmente implementados, cada uno con su Form Request (donde
+      aplica) y su `try/catch` + logging. Suite completa verificada: `php artisan test` → 35
+      tests, 63 assertions, todos en verde. Sin tests de Feature para `/api/logout` todavía
+      (pendiente, similar a `RegisterTest`/`LoginTest`, si se decide agregarlo).
+    - Pendiente para cerrar la Fase 03: pasos 2 (`PerfilController` para `/me`), y evaluar si
+      falta algo del paso 3 (Form Requests) — `RegisterRequest`/`LoginRequest` ya están,
+      faltaría `UpdatePerfilRequest` cuando se haga el paso 2.
+    - Se evaluó crear `LogoutRequest` (Form Request vacío, sin campos que validar ya que
+      `/logout` no recibe body). Se descartó: `AuthController::logout()` sigue tipando
+      `Request $request` genérico, sin Form Request dedicado.
+    - `messages()` completo con textos en español (escritos por el asistente a pedido del
+      usuario, pendiente de su revisión), ya que `config('app.locale')` es `'en'` y el proyecto
+      no tiene carpeta `lang/` publicada — sin esto los errores de validación volverían en
+      inglés. Cubre las 14 combinaciones campo+regla de `rules()`. Nota: `clave.regex` es un
+      mensaje único que cubre ambas reglas `regex` (mayúscula y símbolo) — no se puede
+      diferenciar cuál de las dos falló en el texto.
+    - `tests/Feature/Request/RegisterRequestTest.php` creado (15 tests, todos en verde):
+      testea `rules()` de forma aislada armando `Validator::make($datos, $request->rules(),
+      $request->messages())` a mano — **no** instancia `RegisterRequest` como request HTTP real
+      ni pega contra el endpoint `/api/register` (el `AuthController::register()` todavía no
+      tiene lógica, sigue en TODO). Cubre: datos válidos pasan, `edad`/`sexo` opcionales,
+      `nombre` required/min/max, `correo` formato y unicidad (crea un `Usuario` de prueba con
+      `Usuario::create()` para chocar el `unique`), `clave` min/max y las 2 reglas regex por
+      separado (falta mayúscula / falta símbolo), `edad` integer/min/max, `sexo` fuera del
+      set `M,F,N/R`. Usa `RefreshDatabase` (necesario porque `unique:usuario,correo` consulta
+      la tabla real).
 - **Fase 01 (backend base) en progreso** — pasos 1, 2 y 3 de `plan/01-backend-base.md` `(listo)`:
   - Paso 1: conexión PostgreSQL verificada (ya venía configurada desde Fase 00).
   - Paso 2: **Sanctum instalado** (`laravel/sanctum` v4.3.2 vía Composer). Publicado
