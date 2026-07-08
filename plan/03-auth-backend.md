@@ -9,22 +9,28 @@ con validación server-side y emisión de token Sanctum.
 - `POST /login` — valida credenciales, devuelve token Sanctum + datos básicos.
 - `POST /logout` — revoca el token actual (requiere auth).
 - `GET  /me` — datos del usuario autenticado.
-- `PUT  /me` — editar nombre, correo y/o clave (requiere auth).
+- `PUT  /me/nombre` — editar el nombre (requiere auth). **Decisión (paso 2)**: reemplaza al
+  `PUT /me` único que se planeaba originalmente; se separó en 3 endpoints, uno por campo.
+- `PUT  /me/clave` — editar la clave (requiere auth).
+- `PUT  /me/correo` — editar el correo (requiere auth).
 - `DELETE /me` — eliminar la propia cuenta (requiere auth).
 
 ## Pasos
 1. `AuthController` (Api) con acciones register/login/logout. (listo)
-2. `PerfilController` (Api) con show/update/destroy para `/me`.
+2. `PerfilController` (Api) con `show`/`destroy` para `/me`, y `updateName`/`updatePassword`/
+   `updateEmail` para `/me/nombre`, `/me/clave`, `/me/correo` (en vez de un único `update`).
 3. **Form Requests** de validación: correo válido y único, clave con mínimo de seguridad,
    edad numérica/rango, sexo dentro de valores permitidos (incluye "prefiero no responder").
-   `RegisterRequest` y `LoginRequest` ya creados (adelantados durante el paso 1); falta
-   `UpdatePerfilRequest` cuando se haga el paso 2.
+   `RegisterRequest` y `LoginRequest` ya creados (adelantados durante el paso 1);
+   `UpdateNombreRequest`, `UpdateClaveRequest` y `UpdateCorreoRequest` creados durante el
+   paso 2 (reemplazan al `UpdatePerfilRequest` único que se había planeado).
 4. Hash de la clave al crear/actualizar. Revocar tokens al eliminar cuenta.
 5. Registrar rutas en `routes/api.php` con middleware `auth:sanctum` donde corresponda.
 
 ## Archivos a tocar
 - `app/Http/Controllers/Api/AuthController.php`, `.../PerfilController.php`.
-- `app/Http/Requests/*` (RegisterRequest, LoginRequest, UpdatePerfilRequest).
+- `app/Http/Requests/*` (RegisterRequest, LoginRequest, UpdateNombreRequest,
+  UpdateClaveRequest, UpdateCorreoRequest).
 - `routes/api.php`.
 
 ## Criterio de "hecho"
