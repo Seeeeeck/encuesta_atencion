@@ -350,18 +350,66 @@
     sin querer, sin seguir ese modo; el usuario decidió dejarlos así (ya funcionan y están
     testeados) y seguir para adelante correctamente desde acá.
   - `app/Notifications/VerificarCorreo.php` creado con `php artisan make:notification
-    VerificarCorreo`. `via()` ya en `['mail']`. `toMail()` dejado como **esqueleto de TODO** (4
-    pasos): 1) generar URL firmada real con `URL::temporarySignedRoute('verification.verify',
-    ...)` hacia la ruta del backend (todavía no existe); 2) extraer `expires`/`signature` de esa
-    URL con `parse_url()` + `parse_str()`; 3) armar la URL del **frontend**
-    (`config('app.frontend_url') . '/verificar-correo'`) con esos mismos parámetros vía
-    `http_build_query()`; 4) devolver el `MailMessage` con el botón apuntando a esa URL. Todavía
-    no compila en tiempo de ejecución (falta el `return`) — pendiente que el usuario lo
-    complete.
-  - Pendiente: que el usuario complete `toMail()`, crear la ruta/controller firmados de
-    `/api/email/verificar/{id}/{hash}`, disparar el envío en `register()`, el bloqueo en
-    `login()`, y actualizar `docs/requisitos_funcionales.md` + `plan/03-auth-backend.md` con
-    este requisito nuevo.
+    VerificarCorreo`. `via()` en `['mail']`. **`toMail()` completo** (commiteado en `dfd88ac`,
+    contexto corregido tras detectar que estaba desactualizado — el código real ya tenía los 4
+    pasos y el `return`, no un esqueleto): 1) genera URL firmada real con
+    `URL::temporarySignedRoute('verification.verify', now()->addMinutes(60), ['id' =>
+    $notifiable->getKey(), 'hash' => sha1($notifiable->getEmailForVerification())])` hacia una
+    ruta del backend que **todavía no existe** (`verification.verify`); 2) extrae
+    `expires`/`signature` de esa URL con `parse_url()` + `parse_str()`; 3) arma la URL del
+    **frontend** (`config('app.frontend_url').'/verificar-correo'`) con `id`, `hash` y esos
+    mismos parámetros de firma vía `http_build_query()`; 4) devuelve el `MailMessage` (`subject`,
+    `greeting`, `line`, `action` con la URL del frontend, `line` final).
+  - **Ruta creada** en `routes/api.php`: `Route::middleware('signed')->group(...)` con
+    `GET /email/verificar/{id}/{hash}` → `AuthController::verifyEmail`, `->name('verification.verify')`.
+    Pública (sin `auth:sanctum`, quien hace click en el mail no está logueado).
+  - **`AuthController::verifyEmail()` completo**: mismo patrón `try/catch` + `Log::error()` que
+    el resto del controller. Dentro del `try`, en orden: 1) busca `Usuario::where('id',
+    $request->id)->first()` (`$id`/`$hash` leídos de `$request->id` / `$request->hash`, que
+    Laravel resuelve solo desde los parámetros de la ruta vía el fallback de
+    `Request::__get()`); 2) si `$usuario` es `null` → 404 "No existe el usuario" (chequeo
+    **antes** de usar `$usuario->correo`, corregido un bug de orden durante el desarrollo); 3) si
+    `$hash !== sha1($usuario->correo)` → **403** (no 401 — no es un problema de credenciales,
+    es un link que dejó de ser válido porque el correo cambió; se alineó con el criterio que ya
+    usa el middleware `signed` de Laravel, que también responde 403 ante firma inválida); 4)
+    `$usuario->markEmailAsVerified()` (ya existía en el modelo) y responde 200 con
+    `is_verified`. Probado end-to-end a mano con Tinker (URL firmada generada con
+    `URL::temporarySignedRoute()`).
+  - **`AuthController::register()` actualizado**: agrega `$usuario->sendEmailVerificationNotification();`
+    justo después de `Usuario::create($datos)`, antes de generar el token Sanctum.
+  - **Bug encontrado y AÚN NO corregido** (pendiente, a propósito — se decidió parar por hoy):
+    `sendEmailVerificationNotification()` no tiraba ningún error pero el mail nunca llegaba a
+    Mailtrap. Diagnóstico completo:
+    1. `Usuario` no tenía el trait `Illuminate\Notifications\Notifiable` — `Illuminate\Foundation\Auth\User`
+       (la clase base) **no lo incluye** por defecto (se verificó leyendo el código fuente real
+       de Laravel en `vendor/`, corrigiendo una suposición inicial incorrecta). Se agregó
+       `use Illuminate\Notifications\Notifiable;` + `Notifiable` al `use` de la clase — esto
+       arregló el error `BadMethodCallException: Call to undefined method notify()`.
+    2. Con el trait agregado, `notify()` ya no explota, pero el mail **sigue sin llegar**, sin
+       ningún error. Causa real identificada: el canal `mail` de Laravel resuelve el destinatario
+       llamando a `routeNotificationForMail()` (o, si no está definido, al default del trait
+       `Notifiable`, que lee `$this->email`). La tabla `usuario` no tiene columna `email`, tiene
+       `correo` — mismo problema de fondo que ya se había resuelto en `getEmailForVerification()`,
+       pero acá falta el override equivalente. Cuando la dirección resuelve a `null`,
+       `Illuminate\Notifications\Channels\MailChannel::send()` hace `return;` **en silencio**, sin
+       excepción — por eso `sendEmailVerificationNotification()` devuelve `null` limpio y no hay
+       nada en el log. Confirmado con `Mail::raw(...)` en Tinker, que sí llegó a Mailtrap (aislando
+       que el transporte SMTP funciona bien; el problema es específico del sistema de
+       Notifications).
+    - **Pendiente para la próxima sesión**: agregar `routeNotificationForMail(): string { return
+      $this->correo; }` a `Usuario.php`.
+    - También pendiente revisar: quedó un `use Override;` sin usar en `Usuario.php` (agregado en
+      algún momento de esta sesión, no confirmado si fue intencional — revisar si se usa en algún
+      método con `#[Override]` o si hay que sacarlo).
+  - **Bug aparte, no relacionado a esta feature, encontrado y corregido**: `SESSION_DRIVER=database`
+    en `.env` apuntaba a la tabla `sessions`, que se había eliminado a propósito en Fase 02 (esta
+    app es 100% API con tokens Sanctum, no usa sesiones de servidor). Cualquier request que pasara
+    por el middleware `web` (ej. la home `/`) tiraba `SQLSTATE[42P01]: Undefined table: sessions`.
+    Corregido cambiando `SESSION_DRIVER=database` → `SESSION_DRIVER=array` en `.env` y
+    `.env.example` (no persiste nada, no hace falta ninguna tabla).
+  - Pendiente para cerrar esta feature (además del bug de arriba): el bloqueo `403` en `login()`
+    si `is_verified` es `false`, y actualizar `docs/requisitos_funcionales.md` +
+    `plan/03-auth-backend.md` con este requisito nuevo.
     - `messages()` completo con textos en español (escritos por el asistente a pedido del
       usuario, pendiente de su revisión), ya que `config('app.locale')` es `'en'` y el proyecto
       no tiene carpeta `lang/` publicada — sin esto los errores de validación volverían en

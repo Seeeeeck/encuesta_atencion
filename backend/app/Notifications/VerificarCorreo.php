@@ -35,6 +35,9 @@ class VerificarCorreo extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
+
+        $idKey = $notifiable->getKey();
+        $hash = sha1($notifiable->getEmailForVerification());
         // 1. URL firmada real, hacia una ruta del backend que todavía no existe
         //    ('verification.verify' — la creamos en el próximo paso). Lleva el id del usuario
         //    y un hash de su correo (evita que el link sirva si el correo cambia después).
@@ -42,8 +45,8 @@ class VerificarCorreo extends Notification
             'verification.verify',
             now()->addMinutes(60),
             [
-                'id' => $notifiable->getKey(),
-                'hash' => sha1($notifiable->getEmailForVerification()),
+                'id' => $idKey,
+                'hash' => $hash,
             ]
         );
 
@@ -57,19 +60,20 @@ class VerificarCorreo extends Notification
         // 3. Armamos la URL del frontend con los mismos parámetros (id, hash, expires,
         //    signature) — el frontend (a construir después) va a leerlos y pegarle al backend
         //    reconstruyendo la URL firmada original.
-        $urlFrontend = config('app.frontend_url').'/verificar-correo?'.http_build_query([
-            'id' => $notifiable->getKey(),
-            'hash' => sha1($notifiable->getEmailForVerification()),
+        $urlFrontend = config('app.frontend_url') . '/verificar-correo?' . http_build_query([
+            'id' => $idKey,
+            'hash' => $hash,
             ...$parametrosFirma,
         ]);
 
         // 4. El contenido del correo en sí.
         return (new MailMessage)
+            ->replyTo($notifiable->getEmailForVerification())
             ->subject('Verifica tu correo')
             ->greeting('¡Hola!')
             ->line('Haz click en el botón para verificar tu cuenta.')
             ->action('Verificar correo', $urlFrontend)
-            ->line('Si no creaste esta cuenta, podés ignorar este correo.');
+            ->line('Si no creaste esta cuenta, puedes ignorar este correo.');
     }
 
     /**
