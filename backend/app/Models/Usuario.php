@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\VerificarCambioCorreo;
 use App\Notifications\VerificarCorreo;
 use Illuminate\Auth\MustVerifyEmail as MustVerifyEmailTrait;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -9,11 +10,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Override;
+
 
 class Usuario extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, MustVerifyEmailTrait,Notifiable;
+    use HasApiTokens, HasFactory, MustVerifyEmailTrait, Notifiable;
 
     protected $table = 'usuario';
 
@@ -57,7 +58,7 @@ class Usuario extends Authenticatable implements MustVerifyEmail
         return (bool) $this->is_verified;
     }
 
-   
+
     public function markEmailAsVerified(): bool
     {
         return $this->forceFill(['is_verified' => true])->save();
@@ -80,6 +81,15 @@ class Usuario extends Authenticatable implements MustVerifyEmail
     {
         $this->notify(new VerificarCorreo());
     }
+
+    //sirve para indicar a que correo debe enviar la confirmación
+    public function routeNotificationFor($driver, $notification = null)
+    {
+        return $this->getEmailForVerification();
+    }
+
+    public function sendUpdateEmailVerification():void{
+
+        $this->notify(new VerificarCambioCorreo());
+    }
 }
-
-

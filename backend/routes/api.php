@@ -23,7 +23,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [PerfilController::class, 'show']);
     Route::delete('/me', [PerfilController::class, 'destroy']);
 
-    Route::put('/me/nombre', [PerfilController::class, 'updateName']);
-    Route::put('/me/clave', [PerfilController::class, 'updatePassword']);
-    Route::put('/me/correo', [PerfilController::class, 'updateEmail']);
+    Route::put('/me/actualizar/nombre', [PerfilController::class, 'updateName']);
+    Route::put('/me/actualizar/clave', [PerfilController::class, 'updatePassword']);
+    Route::put('/me/actualizar/correo', [PerfilController::class, 'updateEmail']);
+    Route::get('/me/actualizar/correo/verificacion',[PerfilController::class,'updateEmailVerify']);
+
+    Route::post('/destroy/user', [PerfilController::class, 'destroy']);
 });
+
+
+
+//TEST
+Route::get("user/email", [PerfilController::class, "showUserByEmail"]);
+Route::post("user/destroy",[PerfilController::class,"deleteUserByEmail"]);

@@ -24,13 +24,14 @@ class AuthController extends Controller
 
             $usuario = Usuario::create($datos);
             $usuario->sendEmailVerificationNotification();
-
+        
             $token = $usuario->createToken('auth-token')->plainTextToken;
 
             return response()->json([
                 'token' => $token,
                 'usuario' => $usuario,
             ], 201);
+
         } catch (\Throwable $e) {
             Log::error('Error al registrar usuario', [
                 'controlador' => self::class,
