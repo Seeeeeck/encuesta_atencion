@@ -9,6 +9,7 @@ use App\Models\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 
 class AuthController extends Controller
 {
@@ -22,13 +23,15 @@ class AuthController extends Controller
             $datos['rol'] = 'usuario';
 
             $usuario = Usuario::create($datos);
-
+            $usuario->sendEmailVerificationNotification();
+        
             $token = $usuario->createToken('auth-token')->plainTextToken;
 
             return response()->json([
                 'token' => $token,
                 'usuario' => $usuario,
             ], 201);
+
         } catch (\Throwable $e) {
             Log::error('Error al registrar usuario', [
                 'controlador' => self::class,
@@ -92,6 +95,57 @@ class AuthController extends Controller
             ]);
 
             return response()->json(['message' => 'Ocurrió un error al cerrar sesión.'], 500);
+        }
+    }
+
+    public function verifyEmail(Request $request)
+    {
+
+        try {
+            $id = $request->id;
+            $hash = $request->hash;
+
+            $usuario = Usuario::where("id", $id)->first();
+
+            if (!$usuario) {
+                return response()->json(['message' => "No existe el usuairo"], 404);
+            }
+
+            if ($hash !== sha1($usuario->correo)) {
+                return response()->json(
+                    [
+                        "message" => "La verificación no es auténtica",
+                    ],
+                    403
+                );
+            };
+
+            $verified = $usuario->markEmailAsVerified();
+
+            if (!$verified) {
+                return response()->json([
+                    'message' => 'Usuario no verificado',
+                    'is_verified' => false
+                ], 200);
+            }
+
+            return response()->json([
+                'message' => 'Usuario verificado',
+                'is_verified' => true
+            ], 200);
+        } catch (\Throwable $e) {
+
+            Log::error('Error al verificar email', [
+                'controlador' => self::class,
+                'metodo' => __FUNCTION__,
+                'fecha_hora' => now()->toDateTimeString(),
+                'mensaje' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                "message" => "Se capturó un error no controlado al verificar email",
+                
+            ],500 );
         }
     }
 }

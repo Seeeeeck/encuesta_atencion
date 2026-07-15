@@ -260,6 +260,214 @@
     - Se evaluó crear `LogoutRequest` (Form Request vacío, sin campos que validar ya que
       `/logout` no recibe body). Se descartó: `AuthController::logout()` sigue tipando
       `Request $request` genérico, sin Form Request dedicado.
+- **Fase 03, paso 2 (`PerfilController`) — en progreso**:
+  - `app/Http/Controllers/Api/PerfilController.php` creado con `show()`, `destroy()` y,
+    **decisión del usuario**, la edición del perfil se dividió en **3 métodos separados** en vez
+    de un único `update()`: `updateName()`, `updatePassword()`, `updateEmail()` — uno por campo,
+    cada uno con su propio Form Request (sin `sometimes`, todos `required`, porque cada endpoint
+    siempre espera exactamente ese campo). Las 5 acciones operan siempre sobre `$request->user()`
+    (el usuario autenticado vía `auth:sanctum`), nunca sobre un id de la URL — así nadie puede
+    editar/borrar la cuenta de otro usuario. Se descartó el enfoque inicial de un único
+    `UpdatePerfilRequest` con campos `sometimes` (ese archivo se creó y se borró en el mismo
+    intercambio, nunca se commiteó).
+  - Rutas registradas en `routes/api.php`, dentro del mismo grupo `auth:sanctum` que `/logout`:
+    `GET /me` → `show`, `DELETE /me` → `destroy`, `PUT /me/actualizar/nombre` → `updateName`,
+    `PUT /me/actualizar/clave` → `updatePassword`, `PUT /me/actualizar/correo` → `updateEmail`,
+    `GET /me/actualizar/correo/verificacion` → `updateEmailVerify` (nuevo, ver abajo). Las rutas
+    se renombraron de `/me/nombre|clave|correo` a `/me/actualizar/nombre|clave|correo` (más
+    explícito). Esto reemplaza el único `PUT /me` que proponía originalmente
+    `plan/03-auth-backend.md` — pendiente actualizar ese archivo de plan cuando se cierre el
+    paso 2 completo. También se agregó `POST /destroy/user` → `destroy` (alias de `DELETE /me`
+    para pruebas, mismo grupo `auth:sanctum`).
+  - **`show()` completo**: `return response()->json($request->user(), 200);` (`clave` no
+    aparece por `$hidden`).
+  - **`destroy()` completo**: `$usuario = $request->user(); $usuario->tokens()->delete();
+    $usuario->delete();` y responde `response()->json(['message' => 'Cuenta eliminada
+    correctamente.'], 200)`. **Hallazgo importante**: la tabla `personal_access_tokens` de
+    Sanctum usa `morphs('tokenable')` **sin foreign key real** a nivel BD (a diferencia de
+    `encuesta`/`respuesta` que sí tienen `ON DELETE CASCADE`) — si no se borran los tokens a
+    mano antes de `$usuario->delete()`, quedan huérfanos en la tabla. Esto es lo que pedía
+    explícito el paso 4 del plan ("Revocar tokens al eliminar cuenta").
+  - **`updateName()`, `updateEmail()` completos**, mismo patrón en los 2: `$usuario =
+    $request->user(); $usuario->update($request->validated()); return
+    response()->json(["message" => "Se cambió el nombre/correo", $usuario], 200)`, cada uno con
+    su `try/catch` + `Log::error()` propio.
+  - **`updatePassword()` completo**: valida clave actual con `Hash::check()`, busca usuario,
+    asigna `$usuario->clave = Hash::make($request->clave_nueva)`, llama `$usuario->save()`. Sin
+    código muerto.
+  - 3 Form Requests, todos con `authorize()` en `true` y `messages()` en español:
+    - `UpdateNombreRequest`: `nombre` required/string/min:3/max:100 (mismos límites que
+      `RegisterRequest`).
+    - `UpdateClaveRequest` — **actualizado**: ya no pide un solo campo `clave`, ahora pide
+      `clave_actual` (required, sin más reglas — se valida contra el hash en el controller) y
+      `clave_nueva` (required/string/min:5/max:100 + mismas 2 regex de mayúscula/símbolo que
+      `RegisterRequest`). Mensajes en español actualizados para los 2 campos nuevos.
+    - `UpdateCorreoRequest`: **reglas y mensajes vaciados** (decisión del usuario). La validación
+      del `correo` se confía al signed middleware + lógica inline en el controller.
+  - **`updateEmailVerify(Request $request)` completo**: manda la notificación `VerificarCambioCorreo`
+    y responde 200 con el correo actual del usuario. Catch con `return` 500.
+  - `app/Notifications/VerificarCambioCorreo.php` **completado**: `toMail()` genera **dos** URLs
+    firmadas: `update.email` (para `PUT /me/actualizar/correo`, con `id` + `hash`) y
+    `verification.verify.sign` (para `GET /me/actualizar/correo/verificacion/firma`, mismo `id` +
+    `hash`). Extrae query string de `update.email` con `parse_url()` + `parse_str()`, y arma
+    link del frontend (`/actualizar-correo?verificacion=<URL verificación>&<params update.email>`).
+  - **Rutas nuevas en `routes/api.php`** dentro del grupo `signed`:
+    - `GET /me/actualizar/correo/verificacion/firma` → `PerfilController::verificacionFirmaEmail`
+      (name: `verification.verify.sign`). Devuelve 200 si la firma es válida.
+    - `PUT /me/actualizar/correo` → `PerfilController::updateEmail` (name: `update.email`).
+      **Movida** del grupo `auth:sanctum` al grupo `signed`. `updateEmail()` ahora busca usuario
+      por `$request->id` (del query string firmado) en vez de `$request->user()`.
+  - `UpdateCorreoRequest.php`: reglas y mensajes **vaciados** (la validación se confía al signed
+    middleware + la lógica inline).
+  - `PerfilController::verificacionFirmaEmail()` **nuevo**: devuelve `200` sin más lógica — el
+    middleware `signed` ya validó la firma antes de llegar.
+  - Diseño del flujo de verificación de cambio de correo (completado backend):
+    1. `updateEmailVerify` manda `VerificarCambioCorreo` al correo actual del usuario.
+    2. La notificación genera **dos** URLs firmadas: `update.email` (para cambiar el correo) y
+       `verification.verify.sign` (para verificar que el link no expiró al cargar el frontend).
+    3. El link del mail apunta a `/actualizar-correo` del frontend con ambas firmas.
+    4. Frontend llama primero a `GET /me/actualizar/correo/verificacion/firma` (middleware `signed`)
+       al cargar; si 200 muestra el formulario, si 403 avisa expiró.
+    5. El cambio real se hace vía `PUT /me/actualizar/correo` (protegido por middleware `signed`,
+       ya no por `auth:sanctum`), usando `$request->id` para identificar al usuario.
+  - Verificado: `php artisan test` → 35 tests, 63 assertions, todos en verde (sin tests de
+    Feature nuevos para `/api/me` GET/DELETE/PUT todavía — pendiente si se decide agregarlos).
+    **Nota**: estos tests fueron corridos antes de los últimos cambios (`updatePassword`
+    reescrito, `updateEmailVerify` nuevo) — no hay test que hoy cubra ninguno de los 2 bugs
+    señalados arriba.
+  - **Métodos de depuración `//TEST` (temporales, NO son parte del diseño final)**:
+    - `showUserByEmail(Request)` → busca `Usuario::where('correo', $request->email)->first()`,
+      404 si no existe, si no devuelve el usuario.
+    - `deleteUserByEmail(Request)` → `Usuario::where('correo', $request->email)->delete()`, 404 si
+      no borró (0 filas). ⚠️ **No** revoca tokens antes de borrar (deja tokens huérfanos, mismo
+      hallazgo que `destroy()`).
+    - Rutas asociadas en `routes/api.php` **fuera** del grupo `auth:sanctum` (públicas, sin auth):
+      `GET user/email` → `showUserByEmail`, `POST user/destroy` → `deleteUserByEmail`. ⚠️ Riesgo:
+      `user/destroy` borra usuarios sin autenticación — **quitar antes de mergear a `main`**.
+    - También se agregó `POST /destroy/user` → `destroy` dentro del grupo `auth:sanctum` (alias del
+      `DELETE /me`, para pruebas).
+    - **Pendiente**: estas rutas/métodos `//TEST` se quitan antes de cerrar la fase / mergear a `main`.
+  - Falta cerrar el paso 2: considerar tests de Feature para estos 5 endpoints.
+- **Feature nueva, fuera del plan original: verificación de correo — en progreso**. No estaba en
+  `docs/requisitos_funcionales.md` ni en `plan/03-auth-backend.md` (que solo mencionaba
+  "confirmar la cuenta con Google", algo distinto, Fase 10/OAuth). Decisiones tomadas con el
+  usuario:
+  - Columna `is_verified` (boolean, default `false`) en `usuario`, **no** la convención de
+    Laravel (`email_verified_at` timestamp).
+  - El link de verificación apunta al **frontend** (`FRONTEND_URL/verificar-correo?...`), no
+    directo al backend — arquitectura API + SPA separados. El backend genera una URL firmada
+    real hacia una ruta propia (`GET /api/email/verificar/{id}/{hash}`, middleware `signed`);
+    esos mismos parámetros (`id`, `hash`, `expires`, `signature`) se pasan como query string al
+    link del frontend. La pantalla de React (a construir en Fase 07/08, todavía no existe) va a
+    tomar esos parámetros y pegarle al backend reconstruyendo la URL firmada exacta — recién ahí
+    Laravel valida la firma.
+  - `login()` **bloquea** con `403` si `is_verified` es `false` (decisión explícita del usuario,
+    a diferencia de dejarlo pasar).
+  - Mail configurado con **Mailtrap** (sandbox de testing, no manda correos reales) en
+    `backend/.env`: `MAIL_MAILER=smtp`, `MAIL_HOST=sandbox.smtp.mailtrap.io`, `MAIL_PORT=2525`,
+    credenciales de la cuenta del usuario. No se tocó `.env.example` (sigue con el driver `log`
+    por defecto, para no versionar nada específico de Mailtrap).
+  - Migración `2026_07_08_182111_add_is_verified_to_usuario_table.php` corrida contra Postgres
+    real: agrega `is_verified boolean default false` a `usuario` (`Schema::table`, no
+    `Schema::create`, porque modifica una tabla existente de la Fase 02). Suite verificada
+    post-migración: `php artisan test` → 35 tests, 63 assertions, todos en verde.
+  - **`Usuario` actualizado** (`app/Models/Usuario.php`): `implements
+    Illuminate\Contracts\Auth\MustVerifyEmail`, usa el trait `Illuminate\Auth\MustVerifyEmail`
+    (importado como `MustVerifyEmailTrait` para no chocar de nombre con la interfaz), pero
+    **sobrescribe** 4 de sus métodos porque el trait por defecto asume columnas `email`/
+    `email_verified_at` que no existen en esta tabla:
+    - `hasVerifiedEmail()` → lee `is_verified` (bool) en vez de `email_verified_at`.
+    - `markEmailAsVerified()` / `markEmailAsUnverified()` → `forceFill(['is_verified' =>
+      true/false])->save()` en vez de tocar `email_verified_at`.
+    - `getEmailForVerification()` → devuelve `$this->correo` en vez de `$this->email`.
+    - `routeNotificationFor($driver, $notification = null)` → devuelve `$this->getEmailForVerification()`
+      (el `correo`). Sin esto, las notificaciones por mail se ruteaban al `$this->email` por defecto
+      (que es `null` en esta tabla) y **el correo de verificación no llegaba a Mailtrap** aunque el
+      registro devolviera 201. NOTA: la versión actual devuelve el correo para **cualquier** driver;
+      si a futuro se agrega otro canal (database, etc.) habrá que filtrar por `$driver === 'mail'` y
+      delegar el resto a `parent::routeNotificationFor(...)`.
+    - `sendEmailVerificationNotification()` → manda una notificación propia
+      `App\Notifications\VerificarCorreo` (todavía no creada) en vez de la
+      `Illuminate\Auth\Notifications\VerifyEmail` por defecto de Laravel (que generaría un link
+      apuntando a una ruta del propio Laravel, no al frontend).
+    - `sendUpdateEmailVerification()` → nuevo, mismo patrón que `sendEmailVerificationNotification()`
+      pero manda `App\Notifications\VerificarCambioCorreo` (notificación nueva, creada con
+      `php artisan make:notification`, esqueleto genérico de artisan todavía sin completar su
+      `toMail()` — pendiente armar la URL firmada hacia una ruta backend nueva + el link al
+      formulario del frontend, siguiendo el mismo patrón que `VerificarCorreo`).
+    - Un método sobrescrito en la clase siempre gana sobre el mismo método traído por un trait —
+      por eso alcanza con definirlos directo en `Usuario`, sin tocar el trait.
+    - `is_verified` agregado a `casts()` como `'boolean'` (igual que `is_ok` en `Encuesta`).
+      **No** está en `$fillable` — mismo criterio que `rol`, nadie debe poder mandarlo desde el
+      request.
+    - Verificado: `php artisan test` → 35 tests, 63 assertions, todos en verde (el import de
+      `VerificarCorreo` no rompe nada porque PHP no la instancia hasta que se llame
+      `sendEmailVerificationNotification()`, y ningún test la llama todavía).
+  - **Corrección de proceso**: a partir de acá se retoma el "Modo Tutor" (esqueleto con TODO,
+    el usuario escribe el cuerpo) — la migración y el modelo de arriba se escribieron completos
+    sin querer, sin seguir ese modo; el usuario decidió dejarlos así (ya funcionan y están
+    testeados) y seguir para adelante correctamente desde acá.
+  - `app/Notifications/VerificarCorreo.php` creado con `php artisan make:notification
+    VerificarCorreo`. `via()` en `['mail']`. **`toMail()` completo** (commiteado en `dfd88ac`,
+    contexto corregido tras detectar que estaba desactualizado — el código real ya tenía los 4
+    pasos y el `return`, no un esqueleto): 1) genera URL firmada real con
+    `URL::temporarySignedRoute('verification.verify', now()->addMinutes(60), ['id' =>
+    $notifiable->getKey(), 'hash' => sha1($notifiable->getEmailForVerification())])` hacia una
+    ruta del backend que **todavía no existe** (`verification.verify`); 2) extrae
+    `expires`/`signature` de esa URL con `parse_url()` + `parse_str()`; 3) arma la URL del
+    **frontend** (`config('app.frontend_url').'/verificar-correo'`) con `id`, `hash` y esos
+    mismos parámetros de firma vía `http_build_query()`; 4) devuelve el `MailMessage` (`subject`,
+    `greeting`, `line`, `action` con la URL del frontend, `line` final).
+  - **Ruta creada** en `routes/api.php`: `Route::middleware('signed')->group(...)` con
+    `GET /email/verificar/{id}/{hash}` → `AuthController::verifyEmail`, `->name('verification.verify')`.
+    Pública (sin `auth:sanctum`, quien hace click en el mail no está logueado).
+  - **`AuthController::verifyEmail()` completo**: mismo patrón `try/catch` + `Log::error()` que
+    el resto del controller. Dentro del `try`, en orden: 1) busca `Usuario::where('id',
+    $request->id)->first()` (`$id`/`$hash` leídos de `$request->id` / `$request->hash`, que
+    Laravel resuelve solo desde los parámetros de la ruta vía el fallback de
+    `Request::__get()`); 2) si `$usuario` es `null` → 404 "No existe el usuario" (chequeo
+    **antes** de usar `$usuario->correo`, corregido un bug de orden durante el desarrollo); 3) si
+    `$hash !== sha1($usuario->correo)` → **403** (no 401 — no es un problema de credenciales,
+    es un link que dejó de ser válido porque el correo cambió; se alineó con el criterio que ya
+    usa el middleware `signed` de Laravel, que también responde 403 ante firma inválida); 4)
+    `$usuario->markEmailAsVerified()` (ya existía en el modelo) y responde 200 con
+    `is_verified`. Probado end-to-end a mano con Tinker (URL firmada generada con
+    `URL::temporarySignedRoute()`).
+  - **`AuthController::register()` actualizado**: agrega `$usuario->sendEmailVerificationNotification();`
+    justo después de `Usuario::create($datos)`, antes de generar el token Sanctum.
+  - **Bug encontrado y AÚN NO corregido** (pendiente, a propósito — se decidió parar por hoy):
+    `sendEmailVerificationNotification()` no tiraba ningún error pero el mail nunca llegaba a
+    Mailtrap. Diagnóstico completo:
+    1. `Usuario` no tenía el trait `Illuminate\Notifications\Notifiable` — `Illuminate\Foundation\Auth\User`
+       (la clase base) **no lo incluye** por defecto (se verificó leyendo el código fuente real
+       de Laravel en `vendor/`, corrigiendo una suposición inicial incorrecta). Se agregó
+       `use Illuminate\Notifications\Notifiable;` + `Notifiable` al `use` de la clase — esto
+       arregló el error `BadMethodCallException: Call to undefined method notify()`.
+    2. Con el trait agregado, `notify()` ya no explota, pero el mail **sigue sin llegar**, sin
+       ningún error. Causa real identificada: el canal `mail` de Laravel resuelve el destinatario
+       llamando a `routeNotificationForMail()` (o, si no está definido, al default del trait
+       `Notifiable`, que lee `$this->email`). La tabla `usuario` no tiene columna `email`, tiene
+       `correo` — mismo problema de fondo que ya se había resuelto en `getEmailForVerification()`,
+       pero acá falta el override equivalente. Cuando la dirección resuelve a `null`,
+       `Illuminate\Notifications\Channels\MailChannel::send()` hace `return;` **en silencio**, sin
+       excepción — por eso `sendEmailVerificationNotification()` devuelve `null` limpio y no hay
+       nada en el log. Confirmado con `Mail::raw(...)` en Tinker, que sí llegó a Mailtrap (aislando
+       que el transporte SMTP funciona bien; el problema es específico del sistema de
+       Notifications).
+    - **Pendiente para la próxima sesión**: agregar `routeNotificationForMail(): string { return
+      $this->correo; }` a `Usuario.php`.
+    - También pendiente revisar: quedó un `use Override;` sin usar en `Usuario.php` (agregado en
+      algún momento de esta sesión, no confirmado si fue intencional — revisar si se usa en algún
+      método con `#[Override]` o si hay que sacarlo).
+  - **Bug aparte, no relacionado a esta feature, encontrado y corregido**: `SESSION_DRIVER=database`
+    en `.env` apuntaba a la tabla `sessions`, que se había eliminado a propósito en Fase 02 (esta
+    app es 100% API con tokens Sanctum, no usa sesiones de servidor). Cualquier request que pasara
+    por el middleware `web` (ej. la home `/`) tiraba `SQLSTATE[42P01]: Undefined table: sessions`.
+    Corregido cambiando `SESSION_DRIVER=database` → `SESSION_DRIVER=array` en `.env` y
+    `.env.example` (no persiste nada, no hace falta ninguna tabla).
+  - Pendiente para cerrar esta feature (además del bug de arriba): el bloqueo `403` en `login()`
+    si `is_verified` es `false`, y actualizar `docs/requisitos_funcionales.md` +
+    `plan/03-auth-backend.md` con este requisito nuevo.
     - `messages()` completo con textos en español (escritos por el asistente a pedido del
       usuario, pendiente de su revisión), ya que `config('app.locale')` es `'en'` y el proyecto
       no tiene carpeta `lang/` publicada — sin esto los errores de validación volverían en
@@ -357,12 +565,21 @@
 
 Relaciones: Usuario 1—N Encuesta; Encuesta 1—N Respuesta; Pregunta 1—N Respuesta.
 
-## Endpoints previstos (ver `plan/03`, `plan/04`, `plan/05`)
-- Auth: `POST /register`, `POST /login`, `POST /logout`, `GET/PUT/DELETE /me`.
-- Encuesta: `GET /preguntas`, `POST /encuesta/iniciar`, `GET /encuesta`,
+## Endpoints actuales (ver `plan/03`, `plan/04`, `plan/05`)
+- Auth (públicos): `POST /register`, `POST /login`.
+- Auth (auth:sanctum): `POST /logout`, `GET /me`, `DELETE /me`,
+  `PUT /me/actualizar/nombre`, `PUT /me/actualizar/clave`,
+  `GET /me/actualizar/correo/verificacion`, `POST /destroy/user`.
+- Auth (signed): `GET /email/verificar/{id}/{hash}` (name: `verification.verify`),
+  `GET /me/actualizar/correo/verificacion/firma` (name: `verification.verify.sign`),
+  `PUT /me/actualizar/correo` (name: `update.email`).
+- Público: `GET /health`.
+- **Rate limiting**: middleware `throttle:60,1` aplicado a todos los grupos de rutas API
+  (públicas, signed, auth:sanctum). 60 requests por minuto.
+- Encuesta (pendiente): `GET /preguntas`, `POST /encuesta/iniciar`, `GET /encuesta`,
   `PUT /encuesta/respuestas/{idPregunta}`, `POST /encuesta/enviar`, `GET /encuesta/estado`,
   `GET /encuesta/compartir`.
-- Admin (`/api/admin`, middleware rol admin): `GET /metricas`, `GET /usuarios`,
+- Admin (pendiente, `/api/admin`, middleware rol admin): `GET /metricas`, `GET /usuarios`,
   `GET /usuarios/{id}/respuestas`, `PUT /usuarios/{id}`, `DELETE /usuarios/{id}`.
 
 ## Decisiones

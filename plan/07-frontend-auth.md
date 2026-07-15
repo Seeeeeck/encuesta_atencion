@@ -12,6 +12,13 @@ con validación en cliente (además de la del backend).
 4. Flujo de sesión: guardar token tras login/registro, redirigir a la encuesta; logout limpia estado.
 5. Edición de perfil (`PUT /me`) y eliminación de cuenta (`DELETE /me`) con confirmación.
 6. Rutas privadas protegidas: sin sesión → redirige a login.
+7. Verificación de correo:
+   - Página `/verificar-correo` (`src/pages/VerificarCorreo/*`) que, **al cargar**, lee los query
+     params del link del email (`id`, `hash`, `expires`, `signature`), reconstruye la URL firmada y
+     le pega automáticamente al backend (`verification.verify`), y muestra un mensaje de resultado
+     (verificado / link inválido o vencido).
+   - **Pendiente relacionado (backend):** editar/personalizar la plantilla del correo de verificación
+     (`App\Notifications\VerificarCorreo` + vistas de mail de Laravel si se quiere cambiar el diseño).
 
 ## Archivos a tocar
 - `frontend/src/pages/Registro/*`, `frontend/src/pages/Login/*`, `frontend/src/pages/Perfil/*`.
