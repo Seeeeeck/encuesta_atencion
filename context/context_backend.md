@@ -574,6 +574,8 @@ Relaciones: Usuario 1—N Encuesta; Encuesta 1—N Respuesta; Pregunta 1—N Res
   `GET /me/actualizar/correo/verificacion/firma` (name: `verification.verify.sign`),
   `PUT /me/actualizar/correo` (name: `update.email`).
 - Público: `GET /health`.
+- **Rate limiting**: middleware `throttle:60,1` aplicado a todos los grupos de rutas API
+  (públicas, signed, auth:sanctum). 60 requests por minuto.
 - Encuesta (pendiente): `GET /preguntas`, `POST /encuesta/iniciar`, `GET /encuesta`,
   `PUT /encuesta/respuestas/{idPregunta}`, `POST /encuesta/enviar`, `GET /encuesta/estado`,
   `GET /encuesta/compartir`.
