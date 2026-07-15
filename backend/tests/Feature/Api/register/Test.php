@@ -1,12 +1,12 @@
 <?php
 
-namespace Tests\Feature\Api;
+namespace Tests\Feature\Api\Register;
 
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class RegisterTest extends TestCase
+class Test extends TestCase
 {
     use RefreshDatabase;
 

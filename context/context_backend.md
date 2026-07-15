@@ -348,6 +348,9 @@
       `DELETE /me`, para pruebas).
     - **Pendiente**: estas rutas/métodos `//TEST` se quitan antes de cerrar la fase / mergear a `main`.
   - Falta cerrar el paso 2: considerar tests de Feature para estos 5 endpoints.
+  - **Tests reestructurados**: los tests de Feature en `tests/Feature/Api/` pasaron a subcarpetas
+    por endpoint: `login/Test.php` (`Tests\Feature\Api\Login\Test`) y `register/Test.php`
+    (`Tests\Feature\Api\Register\Test`).
 - **Feature nueva, fuera del plan original: verificación de correo — en progreso**. No estaba en
   `docs/requisitos_funcionales.md` ni en `plan/03-auth-backend.md` (que solo mencionaba
   "confirmar la cuenta con Google", algo distinto, Fase 10/OAuth). Decisiones tomadas con el
