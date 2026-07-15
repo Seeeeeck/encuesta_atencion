@@ -544,6 +544,13 @@
     con ambos casos (default vía `auth:sanctum` sin token, y una excepción lanzada a mano con
     mensaje propio).
   - **Fase 01 completa** (los 7 pasos de `plan/01-backend-base.md` en `(listo)`).
+- **Fase 04 (encuesta backend) — iniciada** (rama `logica_encuesta`):
+  - `app/Http/Controllers/Api/EncuestaController.php` creado con 2 métodos:
+    - `obtenerPreguntas()` — `GET /encuesta/obtener/preguntas` (devuelve todas las preguntas ordenadas por id).
+    - `enviarEncuesta(EnviarEncuestaRequest)` — `POST /encuesta/enviar` (TODO: crear encuesta + respuestas).
+  - `app/Http/Requests/EnviarEncuestaRequest.php` creado: valida array `respuestas` con `id_pregunta`
+    (required/integer/exists) y `numero_respuesta` (required/integer/min:1/max:5).
+  - Rutas en `routes/api.php` dentro del grupo `auth:sanctum`.
 - **Logs**: se usa `storage/logs/laravel.log` (canal `single` por defecto de Laravel). No se
   creó una carpeta `/logs` aparte — el paso 5 de la Fase 00 se marcó listo así.
 - **`.gitignore`**: el que trae Laravel 11+ ya cubre `.env`, `/vendor`, `/node_modules` y todo
@@ -572,7 +579,8 @@ Relaciones: Usuario 1—N Encuesta; Encuesta 1—N Respuesta; Pregunta 1—N Res
 - Auth (públicos): `POST /register`, `POST /login`.
 - Auth (auth:sanctum): `POST /logout`, `GET /me`, `DELETE /me`,
   `PUT /me/actualizar/nombre`, `PUT /me/actualizar/clave`,
-  `GET /me/actualizar/correo/verificacion`, `POST /destroy/user`.
+  `GET /me/actualizar/correo/verificacion`, `POST /eliminar/usuario`.
+- Encuesta (auth:sanctum): `GET /encuesta/obtener/preguntas`, `POST /encuesta/enviar`.
 - Auth (signed): `GET /email/verificar/{id}/{hash}` (name: `verification.verify`),
   `GET /me/actualizar/correo/verificacion/firma` (name: `verification.verify.sign`),
   `PUT /me/actualizar/correo` (name: `update.email`).
