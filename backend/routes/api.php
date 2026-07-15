@@ -15,6 +15,12 @@ Route::post('/login', [AuthController::class, 'login']);
 
 Route::middleware("signed")->group(function () {
     Route::get('/email/verificar/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify');
+
+    //Hay que enviar en el request la firma
+    Route::get('/me/actualizar/correo/verificacion/firma', [PerfilController::class, 'verificacionFirmaEmail'])->name("verification.verify.sign");
+   
+    Route::put('/me/actualizar/correo', [PerfilController::class, 'updateEmail'])->name('update.email');
+
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -24,9 +30,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/me', [PerfilController::class, 'destroy']);
 
     Route::put('/me/actualizar/nombre', [PerfilController::class, 'updateName']);
+
     Route::put('/me/actualizar/clave', [PerfilController::class, 'updatePassword']);
-    Route::put('/me/actualizar/correo', [PerfilController::class, 'updateEmail']);
-    Route::get('/me/actualizar/correo/verificacion',[PerfilController::class,'updateEmailVerify']);
+
+    Route::get('/me/actualizar/correo/verificacion', [PerfilController::class, 'updateEmailVerify']);
 
     Route::post('/destroy/user', [PerfilController::class, 'destroy']);
 });
@@ -35,4 +42,4 @@ Route::middleware('auth:sanctum')->group(function () {
 
 //TEST
 Route::get("user/email", [PerfilController::class, "showUserByEmail"]);
-Route::post("user/destroy",[PerfilController::class,"deleteUserByEmail"]);
+Route::post("user/destroy", [PerfilController::class, "deleteUserByEmail"]);

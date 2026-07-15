@@ -36,23 +36,55 @@ class VerificarCambioCorreo extends Notification
     public function toMail(object $notifiable): MailMessage
     {
 
-        $idKey=$notifiable->getKey();
-        $hash= sha1($notifiable->getEmailForVerification());
-        //sirve para confirmar la api
-        $urlFirmadaBackend=URL::temporarySignedRoute(
-            'updateEmail',now()->addMinutes(60),
+        $idKey = $notifiable->getKey();
+        //sha1 cualquiera lo puede revisar
+        //sha1 con bcrypt y salt es casi imposible de romper
+        //sal sirve para darle data alaeatoria para que no sean las mismas claves
+
+        $hash = sha1($notifiable->getEmailForVerification());
+        //sirve para decirle a la api
+        //que recibe la firma que necesita verificar la firma
+        $urlFirmadaBackend = URL::temporarySignedRoute(
+            'update.email',
+            now()->addMinutes(60),
             [
-                'id'=>$idKey,
-                'hash'=>$hash
+                'id' => $idKey,
+                'hash' => $hash
             ]
 
         );
 
-        $queryString=parse_url($urlFirmadaBackend,PHP_URL_QUERY);
+        $urlFirmadaVerificación = URL::temporarySignedRoute(
+            'verification.verify.sign',
+            now()->addMinutes(60),
+            [
+                'id' => $idKey,
+                'hash' => $hash
+            ]
+
+        );
+
+        
+
+        //se extraen los parametros id hash signature y expires
+        $queryString = parse_url($urlFirmadaBackend, PHP_URL_QUERY);
+        //parsea a un array o variables
+        parse_str($queryString, $parametrosFirma);
+
+        $urlFrontend = config("app.frontend_url") . '/actualizar-correo?' . http_build_query([
+            'verificacion' => $urlFirmadaVerificación,
+            ...$parametrosFirma
+        ]);
+
+
+
+
         return (new MailMessage)
-            ->line('The introduction to the notification.')
-            ->action('Notification Action', url('/'))
-            ->line('Thank you for using our application!');
+            ->subject('Cambia tu correo con el siguiente link:')
+            ->greeting('¡Hola!')
+            ->line('Haz click en el boton para cambiar tu correo.')
+            ->action('Cambiar correo', $urlFrontend)
+            ->line('Si no solicitaste esto, puedes ingorar este correo.');
     }
 
     /**

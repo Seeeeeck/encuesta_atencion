@@ -292,16 +292,9 @@
     $request->user(); $usuario->update($request->validated()); return
     response()->json(["message" => "Se cambió el nombre/correo", $usuario], 200)`, cada uno con
     su `try/catch` + `Log::error()` propio.
-  - **`updatePassword()` — reescrito, tiene un bug pendiente de corregir**: ahora primero valida
-    la clave actual con `Hash::check($request->clave_actual, $request->user()->clave)` (401 si no
-    coincide), y recién si es correcta arma `$usuario->clave = Hash::make($request->clave_nueva)`.
-    ⚠️ **Bug (confirmado en revisión, pendiente de arreglar)**: nunca se llama `$usuario->save()`
-    (ni `->update()`) después de asignar la clave nueva — el endpoint responde `200 "Se cambió la
-    clave"` pero **la clave en la base de datos no cambia**. Además queda código muerto de una
-    versión anterior: la línea `$request->clave_actual == $request->user();` (comparación sin
-    efecto, no hace nada) y una doble asignación redundante de `$usuario` (`$request->user()`
-    y luego `Usuario::where('id', ...)->first()`, que trae lo mismo). **Pendiente**: agregar el
-    `save()`/`update()` y limpiar esas líneas.
+  - **`updatePassword()` completo**: valida clave actual con `Hash::check()`, busca usuario,
+    asigna `$usuario->clave = Hash::make($request->clave_nueva)`, llama `$usuario->save()`. Sin
+    código muerto.
   - 3 Form Requests, todos con `authorize()` en `true` y `messages()` en español:
     - `UpdateNombreRequest`: `nombre` required/string/min:3/max:100 (mismos límites que
       `RegisterRequest`).
@@ -309,33 +302,34 @@
       `clave_actual` (required, sin más reglas — se valida contra el hash en el controller) y
       `clave_nueva` (required/string/min:5/max:100 + mismas 2 regex de mayúscula/símbolo que
       `RegisterRequest`). Mensajes en español actualizados para los 2 campos nuevos.
-    - `UpdateCorreoRequest`: `correo` required/email/max:150 + único **excepto la propia fila**,
-      usando `Rule::unique('usuario', 'correo')->ignore($this->user()->id)` en vez del string
-      simple `unique:usuario,correo` — necesario porque si el usuario reenvía su propio correo
-      sin cambiarlo, la regla `unique` lo rechazaría al encontrar su propia fila. Import nuevo:
-      `Illuminate\Validation\Rule`.
-  - **`updateEmailVerify(Request $request)` — nuevo**: dispara el flujo de "verificar antes de
-    cambiar el correo". Llama a `$request->user()->sendUpdateEmailVerification()` (método nuevo en
-    `Usuario`, ver abajo) y responde `200` con un mensaje. ⚠️ **Bug pendiente**: el `catch` solo
-    hace `Log::error(...)` pero no tiene ningún `return` — si `sendUpdateEmailVerification()`
-    lanza una excepción, el método termina sin devolver respuesta HTTP (rompe el contrato de
-    controlador). Comparar con el patrón de los demás métodos, que sí devuelven `500` en el catch.
-  - Diseño del flujo de verificación de cambio de correo (decidido en conversación, **en
-    progreso, falta la mitad backend + todo el frontend**):
-    1. `updateEmailVerify` manda un correo (`VerificarCambioCorreo`) al correo **actual** del
-       usuario con un link firmado (misma técnica que `VerificarCorreo`: `temporarySignedRoute`
-       + extraer query string + reconstruir URL hacia el frontend).
-    2. El link lleva a una página del frontend (formulario para editar correo) — **distinta** de
-       `/verificar-correo` (esa es para verificar la cuenta al registrarse, no sirve para este
-       flujo).
-    3. **Pendiente de decidir/crear**: una ruta backend nueva con middleware `signed` (no
-       `verification.verify`, que ya está tomada) que el frontend llame **al cargar la página**
-       (antes de mostrar el formulario) para confirmar que el link sigue vigente — si la firma
-       expiró, el middleware la rechaza automáticamente antes de llegar al controller. Sin este
-       paso, el frontend mostraría el formulario igual aunque el link ya haya expirado, y el
-       usuario solo se enteraría al enviar el form.
-    4. El cambio real de correo sigue pasando por `updateEmail` (`PUT
-       /me/actualizar/correo`), ya protegido por `auth:sanctum` normal, sin necesidad de firma.
+    - `UpdateCorreoRequest`: **reglas y mensajes vaciados** (decisión del usuario). La validación
+      del `correo` se confía al signed middleware + lógica inline en el controller.
+  - **`updateEmailVerify(Request $request)` completo**: manda la notificación `VerificarCambioCorreo`
+    y responde 200 con el correo actual del usuario. Catch con `return` 500.
+  - `app/Notifications/VerificarCambioCorreo.php` **completado**: `toMail()` genera **dos** URLs
+    firmadas: `update.email` (para `PUT /me/actualizar/correo`, con `id` + `hash`) y
+    `verification.verify.sign` (para `GET /me/actualizar/correo/verificacion/firma`, mismo `id` +
+    `hash`). Extrae query string de `update.email` con `parse_url()` + `parse_str()`, y arma
+    link del frontend (`/actualizar-correo?verificacion=<URL verificación>&<params update.email>`).
+  - **Rutas nuevas en `routes/api.php`** dentro del grupo `signed`:
+    - `GET /me/actualizar/correo/verificacion/firma` → `PerfilController::verificacionFirmaEmail`
+      (name: `verification.verify.sign`). Devuelve 200 si la firma es válida.
+    - `PUT /me/actualizar/correo` → `PerfilController::updateEmail` (name: `update.email`).
+      **Movida** del grupo `auth:sanctum` al grupo `signed`. `updateEmail()` ahora busca usuario
+      por `$request->id` (del query string firmado) en vez de `$request->user()`.
+  - `UpdateCorreoRequest.php`: reglas y mensajes **vaciados** (la validación se confía al signed
+    middleware + la lógica inline).
+  - `PerfilController::verificacionFirmaEmail()` **nuevo**: devuelve `200` sin más lógica — el
+    middleware `signed` ya validó la firma antes de llegar.
+  - Diseño del flujo de verificación de cambio de correo (completado backend):
+    1. `updateEmailVerify` manda `VerificarCambioCorreo` al correo actual del usuario.
+    2. La notificación genera **dos** URLs firmadas: `update.email` (para cambiar el correo) y
+       `verification.verify.sign` (para verificar que el link no expiró al cargar el frontend).
+    3. El link del mail apunta a `/actualizar-correo` del frontend con ambas firmas.
+    4. Frontend llama primero a `GET /me/actualizar/correo/verificacion/firma` (middleware `signed`)
+       al cargar; si 200 muestra el formulario, si 403 avisa expiró.
+    5. El cambio real se hace vía `PUT /me/actualizar/correo` (protegido por middleware `signed`,
+       ya no por `auth:sanctum`), usando `$request->id` para identificar al usuario.
   - Verificado: `php artisan test` → 35 tests, 63 assertions, todos en verde (sin tests de
     Feature nuevos para `/api/me` GET/DELETE/PUT todavía — pendiente si se decide agregarlos).
     **Nota**: estos tests fueron corridos antes de los últimos cambios (`updatePassword`
@@ -571,12 +565,19 @@
 
 Relaciones: Usuario 1—N Encuesta; Encuesta 1—N Respuesta; Pregunta 1—N Respuesta.
 
-## Endpoints previstos (ver `plan/03`, `plan/04`, `plan/05`)
-- Auth: `POST /register`, `POST /login`, `POST /logout`, `GET/PUT/DELETE /me`.
-- Encuesta: `GET /preguntas`, `POST /encuesta/iniciar`, `GET /encuesta`,
+## Endpoints actuales (ver `plan/03`, `plan/04`, `plan/05`)
+- Auth (públicos): `POST /register`, `POST /login`.
+- Auth (auth:sanctum): `POST /logout`, `GET /me`, `DELETE /me`,
+  `PUT /me/actualizar/nombre`, `PUT /me/actualizar/clave`,
+  `GET /me/actualizar/correo/verificacion`, `POST /destroy/user`.
+- Auth (signed): `GET /email/verificar/{id}/{hash}` (name: `verification.verify`),
+  `GET /me/actualizar/correo/verificacion/firma` (name: `verification.verify.sign`),
+  `PUT /me/actualizar/correo` (name: `update.email`).
+- Público: `GET /health`.
+- Encuesta (pendiente): `GET /preguntas`, `POST /encuesta/iniciar`, `GET /encuesta`,
   `PUT /encuesta/respuestas/{idPregunta}`, `POST /encuesta/enviar`, `GET /encuesta/estado`,
   `GET /encuesta/compartir`.
-- Admin (`/api/admin`, middleware rol admin): `GET /metricas`, `GET /usuarios`,
+- Admin (pendiente, `/api/admin`, middleware rol admin): `GET /metricas`, `GET /usuarios`,
   `GET /usuarios/{id}/respuestas`, `PUT /usuarios/{id}`, `DELETE /usuarios/{id}`.
 
 ## Decisiones

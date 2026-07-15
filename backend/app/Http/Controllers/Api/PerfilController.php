@@ -61,18 +61,15 @@ class PerfilController extends Controller
     {
         try {
 
-
             if (!Hash::check($request->clave_actual, $request->user()->clave)) {
                 return response()->json(["message" => "La clave actual no correspode al usuario"], 401);
             }
-            $request->clave_actual == $request->user();
-            $usuario = $request->user();
-            //
+
             $usuario = Usuario::where("id", $request->user()->id)->first();
 
             $usuario->clave = Hash::make($request->clave_nueva);
 
-            //guardar clave falta
+            $usuario->save();
 
             return response()->json(["message" => "Se cambió la clave", $usuario], 200);
         } catch (\Throwable $e) {
@@ -93,7 +90,7 @@ class PerfilController extends Controller
     public function updateEmail(UpdateCorreoRequest $request)
     {
         try {
-            $usuario = $request->user();
+            $usuario=Usuario::where('id',$request->id)->first();
             $usuario->update($request->validated());
 
             return response()->json(["message" => "Se cambió el correo", $usuario], 200);
@@ -114,9 +111,9 @@ class PerfilController extends Controller
 
         try {
 
+            $correo = $request->user()->correo;
             $request->user()->sendUpdateEmailVerification();
-            return response()->json(["message" => "Solicitud de cambio de correo enviada a" . " " . $request->user()->correo]);
-
+            return response()->json(["message" => "Solicitud de cambio de correo enviada a $correo"]);
         } catch (\Throwable $e) {
             Log::error("Error al enviar verificacion de cambio de email", [
                 'controlador' => self::class,
@@ -125,9 +122,15 @@ class PerfilController extends Controller
                 'mensaje' => $e->getMessage()
             ]);
 
-            return response()->json(["message"=>"errror al verifical actualizacion de email"],500);
+            return response()->json(["message" => "error al enviar verificación de email"], 500);
         }
+    }
 
+
+    
+    public function verificacionFirmaEmail()
+    {
+        return response()->json(["message" => "firma verificada"], 200);
     }
 
     /**
