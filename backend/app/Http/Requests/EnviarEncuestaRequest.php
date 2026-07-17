@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\TodasLasRespuestasRule;
+use App\Rules\TodasLasRespuestasValidacion;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Override;
@@ -13,7 +15,7 @@ class EnviarEncuestaRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -26,9 +28,9 @@ class EnviarEncuestaRequest extends FormRequest
         //viene un array de id_pregunta y numero_respuesta
         return [
             //
-            'respuestas'=>'required|array',
+            'respuestas'=> ["required"=>new TodasLasRespuestasRule()], //['required'=>new TodasLasRespuestasValidacion()],
             'respuestas.*.numero_respuesta'=>'required|integer|min:1|max:5',
-            'respuestas.*.id_pregunta'=>'required|integer|exists:pregunta.id'
+            'respuestas.*.id_pregunta'=>'required|integer|distinct|exists:pregunta,id'
         ];
     }
 
@@ -36,7 +38,7 @@ class EnviarEncuestaRequest extends FormRequest
     public function messages()
     {
         return [
-            'respuestas.required'=>"Las respuestas son obligatorias",
+            'respuestas.required'=>"caa",
             'respuestas.array'=>"Las respuestas deben ser un array",
             'respuestas.*.numero_respuesta.required'=>"La respuesta es requerida",
             'respuestas.*.numero_respuesta.integer'=>"La respuesta debe ser un número entero",
@@ -44,7 +46,8 @@ class EnviarEncuestaRequest extends FormRequest
             'respuestas.*.numero_respuesta.max'=>"La respuesta debe ser un número maximo 5",
             'respuestas.*.id_pregunta.required'=>"El id de pregunta es obligatorio",
             'respuestas.*.id_pregunta.integer'=>"El id de pregunta debe ser un número entero",
-            'respuestas.*.id_pregunta.exists'=>"El id de pregunta debe existir en la base de datos"
+            'respuestas.*.id_pregunta.distinct'=>"Los id de preguntas deben ser distintos",
+            'respuestas.*.id_pregunta.exists'=>"El id :input de pregunta debe existir en la base de datos"
 
         ];
     }
