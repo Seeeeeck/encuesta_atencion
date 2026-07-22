@@ -36,13 +36,17 @@ paso — el frontend arma el formulario completo en memoria y lo manda todo junt
 - No se puede editar una encuesta ya enviada (no hay endpoint para eso — cada usuario tiene una sola
   `encuesta`, ver modelo de datos).
 
-## Tests (pendiente)
-- `tests/Feature/Encuesta/ObtenerPreguntasTest.php` — 200 con preguntas ordenadas; 401 sin auth.
-- `tests/Feature/Encuesta/EnviarEncuestaTest.php` — camino feliz (200, `is_ok=true`, respuestas
-  guardadas); 401 sin auth.
-- `tests/Feature/Encuesta/EnviarIncompletaTest.php` — 422 si faltan `id_pregunta` o sobran.
-- `tests/Feature/Encuesta/RespuestaInvalidaTest.php` — 422 ante `numero_respuesta` fuera de rango
-  (`0`, `6`) o duplicado.
+## Tests
+Ubicados en `backend/tests/Feature/Api/encuesta/Test.php`.
+- `test_obtener_preguntas` (listo) — 200 con preguntas ordenadas.
+- `test_enviar_encuesta` (listo) — camino feliz (200); falta verificar `is_ok=true` y respuestas
+  guardadas en base.
+- `test_obtener_preguntas_sin_auth` (listo) — 401 sin token.
+- `test_enviar_encuesta_sin_auth` (listo) — 401 sin token.
+- `test_enviar_encuesta_incompleta` (listo) — 422 si falta una respuesta.
+- `test_enviar_encuesta_respuesta_sobrante` (listo) — 422 con `id_pregunta` inexistente.
+- `test_enviar_encuesta_numero_respuesta_fuera_de_rango` (listo) — 422 con `numero_respuesta` en 0 y 6.
+- `test_enviar_encuesta_respuesta_duplicada` (listo) — 422 con `id_pregunta` repetido.
 
 ## Notas
 - Descartado el link público de compartir y el endpoint de estado/progreso de esta fase — no hay

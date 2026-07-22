@@ -544,7 +544,7 @@
     con ambos casos (default vía `auth:sanctum` sin token, y una excepción lanzada a mano con
     mensaje propio).
   - **Fase 01 completa** (los 7 pasos de `plan/01-backend-base.md` en `(listo)`).
-- **Fase 04 (encuesta backend) — en progreso** (rama `logica_encuesta`):
+- **Fase 04 (encuesta backend) — completa** (rama `logica_encuesta`):
   - `app/Http/Controllers/Api/EncuestaController.php` creado con 2 métodos:
     - `obtenerPreguntas()` — `GET /encuesta/obtener/preguntas` (devuelve todas las preguntas ordenadas por id).
     - **`enviarEncuesta(EnviarEncuestaRequest)` completo** — `POST /encuesta/enviar`: dentro de
@@ -579,9 +579,34 @@
     encuesta` agregados para separar visualmente las secciones del archivo de rutas — junto con
     `//logout`, `//Cambios del perfil de usuario` y `//Api de firmas` en los otros grupos; también se
     sacó una ruta duplicada `POST /eliminar/usuario` que repetía `DELETE /me`).
-  - Pendiente cerrar Fase 04: tests de Feature para `enviarEncuesta` y `obtenerPreguntas` (todavía no
-    existen), y revisar el resto de `plan/04-encuesta-backend.md` (iniciar/estado/compartir, según
-    corresponda al alcance real de esta fase).
+  - **Tests de Feature agregados** en `backend/tests/Feature/Api/encuesta/Test.php` (namespace
+    `Tests\Feature\Api\encuesta`): `test_obtener_preguntas` (camino feliz) y `test_enviar_encuesta`
+    (camino feliz). Validado además manualmente por Postman que `POST /encuesta/enviar` responde
+    bien end-to-end.
+  - **Bug de aislamiento en los tests — resuelto**: `listarRespuestasEnviar()` (antes
+    `listarRespuestas()`) hardcodea `id_pregunta` de 1 a 10. El riesgo era que si
+    `test_enviar_encuesta` corría después de otro test que ya sembró `Pregunta` (ej.
+    `test_obtener_preguntas`), fallaba con 422 — no porque quedaran filas viejas (`RefreshDatabase`
+    sí las revierte en una transacción), sino porque en Postgres las **secuencias no son
+    transaccionales**: el rollback no reinicia el contador de `id`, así que el siguiente seed
+    arrancaba en el id 11 en vez del 1. Se mantuvo el `Pregunta::truncate()` antes del
+    `$this->seed(DatabaseSeeder::class)` en `test_enviar_encuesta` — en Postgres `truncate()` sí
+    resetea la secuencia — pero ahora a conciencia de por qué hace falta, no como parche a ciegas.
+    Verificado corriendo `Test.php` completo (los dos tests en orden): pasa (2 tests, 5
+    assertions).
+  - **Tests de 401 agregados**: `test_obtener_preguntas_sin_auth` y `test_enviar_encuesta_sin_auth`
+    en `Test.php`, verifican `401` + `{"message": "No autenticado."}` (confirmado antes a mano con
+    `curl` contra `php artisan serve`, coincide con lo visto en Postman). 4 tests, 9 assertions,
+    todos en verde.
+  - **Tests de validación agregados**: `test_enviar_encuesta_incompleta` (falta una respuesta),
+    `test_enviar_encuesta_respuesta_sobrante` (`id_pregunta` inexistente, 11), 
+    `test_enviar_encuesta_numero_respuesta_fuera_de_rango` (0 y 6) y
+    `test_enviar_encuesta_respuesta_duplicada` (`id_pregunta` repetido) — los 4 esperan `422`.
+    Se agregó el helper privado `registrarYObtenerToken()` para no repetir registro+token en cada
+    test. Suite completa: 8 tests, 18 assertions, todos en verde.
+  - **Fase 04 completa (`listo`)**. Se decidió no agregar assert de `is_ok` en
+    `test_enviar_encuesta`: el campo se setea en `EncuestaController` pero ningún endpoint lo lee
+    todavía (no hay endpoint de estado), así que no aporta cubrir algo que no se consume.
 - **Logs**: se usa `storage/logs/laravel.log` (canal `single` por defecto de Laravel). No se
   creó una carpeta `/logs` aparte — el paso 5 de la Fase 00 se marcó listo así.
 - **`.gitignore`**: el que trae Laravel 11+ ya cubre `.env`, `/vendor`, `/node_modules` y todo
