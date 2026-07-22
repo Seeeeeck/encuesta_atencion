@@ -115,6 +115,7 @@
 - `09-frontend-admin.md`
 - `10-oauth-google.md`
 - `11-no-funcionales-y-despliegue.md`
+- `12-encuesta-invitado.md`
 
 ## Documentación
 - La documentación está en /docs

@@ -9,11 +9,14 @@ Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 });
 
+//Api de autenticación
 Route::middleware('throttle:60,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
 });
 
+
+//Api de usuario
 Route::middleware(['auth:sanctum', 'throttle:60,1'])
     ->group(function () {
         //logout
@@ -36,6 +39,16 @@ Route::middleware(["signed", 'throttle:60,1'])->group(function () {
     Route::get('/me/actualizar/correo/verificacion/firma', [PerfilController::class, 'verificacionFirmaEmail'])->name("verification.verify.sign");
     Route::put('/me/actualizar/correo', [PerfilController::class, 'updateEmail'])->name('update.email');
 });
+
+//Api de admin
+Route::middleware(['auth:sanctum', 'es_admin'])
+    ->group(function () {
+
+        Route::get("/admin/usuarios", function () {
+            return 1;
+        });
+    });
+
 
 //TEST
 Route::get("user/email", [PerfilController::class, "showUserByEmail"]);
