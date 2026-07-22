@@ -1,12 +1,10 @@
 <?php
 
 namespace App\Http\Requests;
-
 use App\Rules\TodasLasRespuestasRule;
-use App\Rules\TodasLasRespuestasValidacion;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Override;
+
 
 class EnviarEncuestaRequest extends FormRequest
 {
@@ -28,7 +26,8 @@ class EnviarEncuestaRequest extends FormRequest
         //viene un array de id_pregunta y numero_respuesta
         return [
             //
-            'respuestas'=> ["required"=>new TodasLasRespuestasRule()], //['required'=>new TodasLasRespuestasValidacion()],
+            
+            'respuestas'=> ['required',"required_todas_respuestas"=>new TodasLasRespuestasRule()], //['required'=>new TodasLasRespuestasValidacion()],
             'respuestas.*.numero_respuesta'=>'required|integer|min:1|max:5',
             'respuestas.*.id_pregunta'=>'required|integer|distinct|exists:pregunta,id'
         ];
@@ -38,7 +37,7 @@ class EnviarEncuestaRequest extends FormRequest
     public function messages()
     {
         return [
-            'respuestas.required'=>"caa",
+            'respuestas.required'=>"Las respuestas son requeridas",
             'respuestas.array'=>"Las respuestas deben ser un array",
             'respuestas.*.numero_respuesta.required'=>"La respuesta es requerida",
             'respuestas.*.numero_respuesta.integer'=>"La respuesta debe ser un número entero",

@@ -544,13 +544,44 @@
     con ambos casos (default vía `auth:sanctum` sin token, y una excepción lanzada a mano con
     mensaje propio).
   - **Fase 01 completa** (los 7 pasos de `plan/01-backend-base.md` en `(listo)`).
-- **Fase 04 (encuesta backend) — iniciada** (rama `logica_encuesta`):
+- **Fase 04 (encuesta backend) — en progreso** (rama `logica_encuesta`):
   - `app/Http/Controllers/Api/EncuestaController.php` creado con 2 métodos:
     - `obtenerPreguntas()` — `GET /encuesta/obtener/preguntas` (devuelve todas las preguntas ordenadas por id).
-    - `enviarEncuesta(EnviarEncuestaRequest)` — `POST /encuesta/enviar` (TODO: crear encuesta + respuestas).
+    - **`enviarEncuesta(EnviarEncuestaRequest)` completo** — `POST /encuesta/enviar`: dentro de
+      `DB::beginTransaction()`, crea la `Encuesta` (`id_usuario` = `$request->user()->id`, `is_ok = true`),
+      itera `$request->respuestas` creando cada `Respuesta` (`id_encuesta`, `id_pregunta`,
+      `respuesta` = `numero_respuesta`), `DB::rollBack()` si algún `save()` falla, `DB::commit()`
+      al final. Mismo patrón `try/catch` + `Log::error()` que el resto de los controllers.
   - `app/Http/Requests/EnviarEncuestaRequest.php` creado: valida array `respuestas` con `id_pregunta`
-    (required/integer/exists) y `numero_respuesta` (required/integer/min:1/max:5).
-  - Rutas en `routes/api.php` dentro del grupo `auth:sanctum`.
+    (required/integer/distinct/exists:pregunta,id) y `numero_respuesta` (required/integer/min:1/max:5),
+    más una regla custom `TodasLasRespuestasRule` sobre el campo `respuestas` completo (exige que
+    lleguen **todas** las preguntas del seeder, ni de más ni de menos).
+  - `app/Rules/TodasLasRespuestasRule.php` creado: compara `Pregunta::pluck('id')` (ordenado) contra
+    los `id_pregunta` recibidos (ordenados); si no coinciden, arma un mensaje que lista los
+    `id_pregunta` faltantes y sobrantes con `array_diff()`.
+  - **Bug encontrado y corregido**: en `EnviarEncuestaRequest::rules()`, la regla de `respuestas`
+    estaba escrita como `'respuestas' => ["required" => new TodasLasRespuestasRule()]` — un array
+    asociativo donde `"required"` es una **key**, no una regla. Laravel arma las reglas de un campo
+    iterando el array con `foreach` y usando solo los **valores** (las keys se ignoran) — así que el
+    `"required"` nunca se aplicaba de verdad, solo la rule custom. Corregido a
+    `'respuestas' => ['required', "required_todas_respuestas" => new TodasLasRespuestasRule()]`:
+    ahora `'required'` es un elemento de índice numérico normal (si o si se aplica), y la rule
+    custom queda bajo una key string arbitraria (solo decorativa, Laravel la ignora igual, pero deja
+    claro en el código qué hace esa regla).
+  - **Limpieza de imports muertos**: tanto `EnviarEncuestaRequest.php` como `EncuestaController.php`
+    tenían `use App\Rules\TodasLasRespuestasValidacion;` — una clase que nunca llegó a crearse
+    (quedó de un rename a mitad de camino a `TodasLasRespuestasRule`). Sacados los dos imports (y de
+    paso `use Override;` sin uso en `EnviarEncuestaRequest.php`). No rompían nada en runtime (import
+    sin instanciar no falla), pero eran basura de un rename incompleto.
+  - `messages()` de `EnviarEncuestaRequest`: el mensaje de `respuestas.required` tenía un placeholder
+    (`"caa"`) sin terminar, corregido a un texto real en español.
+  - Rutas en `routes/api.php` dentro del grupo `auth:sanctum` (con comentarios `//Manipulacion de
+    encuesta` agregados para separar visualmente las secciones del archivo de rutas — junto con
+    `//logout`, `//Cambios del perfil de usuario` y `//Api de firmas` en los otros grupos; también se
+    sacó una ruta duplicada `POST /eliminar/usuario` que repetía `DELETE /me`).
+  - Pendiente cerrar Fase 04: tests de Feature para `enviarEncuesta` y `obtenerPreguntas` (todavía no
+    existen), y revisar el resto de `plan/04-encuesta-backend.md` (iniciar/estado/compartir, según
+    corresponda al alcance real de esta fase).
 - **Logs**: se usa `storage/logs/laravel.log` (canal `single` por defecto de Laravel). No se
   creó una carpeta `/logs` aparte — el paso 5 de la Fase 00 se marcó listo así.
 - **`.gitignore`**: el que trae Laravel 11+ ya cubre `.env`, `/vendor`, `/node_modules` y todo

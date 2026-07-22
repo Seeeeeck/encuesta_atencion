@@ -16,19 +16,20 @@ Route::middleware('throttle:60,1')->group(function () {
 
 Route::middleware(['auth:sanctum', 'throttle:60,1'])
     ->group(function () {
+        //logout
         Route::post('/logout', [AuthController::class, 'logout']);
+        //Cambios del perfil de usuario
         Route::get('/me', [PerfilController::class, 'show']);
-        Route::delete('/me', [PerfilController::class, 'destroy']);
+        Route::delete('/me/eliminar/usuario', [PerfilController::class, 'destroy']);
         Route::put('/me/actualizar/nombre', [PerfilController::class, 'updateName']);
         Route::put('/me/actualizar/clave', [PerfilController::class, 'updatePassword']);
         Route::get('/me/actualizar/correo/verificacion', [PerfilController::class, 'updateEmailVerify']);
         //Manipulacion de encuesta
         Route::get("/encuesta/obtener/preguntas", [EncuestaController::class, 'obtenerPreguntas']);
         Route::post("/encuesta/enviar", [EncuestaController::class, 'enviarEncuesta']);
-
-        Route::post('/eliminar/usuario', [PerfilController::class, 'destroy']);
     });
 
+//Api de firmas
 Route::middleware(["signed", 'throttle:60,1'])->group(function () {
     Route::get('/email/verificar/{id}/{hash}', [AuthController::class, 'verifyEmail'])->name('verification.verify');
     //Hay que enviar en el request la firma

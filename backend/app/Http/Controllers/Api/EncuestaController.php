@@ -7,7 +7,6 @@ use App\Http\Requests\EnviarEncuestaRequest;
 use App\Models\Encuesta;
 use App\Models\Pregunta;
 use App\Models\Respuesta;
-use App\Rules\TodasLasRespuestasValidacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -26,6 +25,7 @@ class EncuestaController extends Controller
 
                 return response()->json(["message" => "No existen preguntas"], 404);
             }
+            
 
             return response()->json(["message" => "preguntas obtenidas", "preguntas" => $preguntas], 200);
         } catch (\Throwable $e) {

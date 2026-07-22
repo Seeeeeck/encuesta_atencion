@@ -21,10 +21,10 @@ class TodasLasRespuestasRule implements ValidationRule
 
             $mensaje = 'Deben enviarse todas las preguntas.';
             if ($faltantes) {
-                $mensaje .= ' Faltan estos id: ' . implode(', ', $faltantes) . '.';
+                $mensaje .= ' Faltan estos id_pregunta: ' . implode(', ', $faltantes) . '.';
             }
             if ($sobrantes) {
-                $mensaje .= ' Sobran estos id: ' . implode(', ', $sobrantes) . '.';
+                $mensaje .= ' Sobran estos id_pregunta: ' . implode(', ', $sobrantes) . '.';
             }
 
             $fail($mensaje);
