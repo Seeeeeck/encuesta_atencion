@@ -28,7 +28,7 @@ class PerfilController extends Controller
                 'mensaje' => $e->getMessage(),
             ]);
 
-            return response()->json(['message' => 'Ocurrió un error al obtener el perfil.'], 500);
+            return response()->json(['message' => 'Err:Ocurrió un error al obtener el perfil.'], 500);
         }
     }
 
@@ -50,7 +50,7 @@ class PerfilController extends Controller
                 'mensaje' => $e->getMessage(),
             ]);
 
-            return response()->json(['message' => 'Ocurrió un error al actualizar el nombre.'], 500);
+            return response()->json(['message' => 'Err:Ocurrió un error al actualizar el nombre.'], 500);
         }
     }
 
@@ -80,7 +80,7 @@ class PerfilController extends Controller
                 'mensaje' => $e->getMessage(),
             ]);
 
-            return response()->json(['message' => 'Ocurrió un error al actualizar la clave.'], 500);
+            return response()->json(['message' => 'Err:Ocurrió un error al actualizar la clave.'], 500);
         }
     }
 
@@ -102,7 +102,7 @@ class PerfilController extends Controller
                 'mensaje' => $e->getMessage(),
             ]);
 
-            return response()->json(['message' => 'Ocurrió un error al actualizar el correo.'], 500);
+            return response()->json(['message' => 'Err:Ocurrió un error al actualizar el correo.'], 500);
         }
     }
 
@@ -122,7 +122,7 @@ class PerfilController extends Controller
                 'mensaje' => $e->getMessage()
             ]);
 
-            return response()->json(["message" => "error al enviar verificación de email"], 500);
+            return response()->json(["message" => "Err:error al enviar verificación de email"], 500);
         }
     }
 
@@ -153,7 +153,7 @@ class PerfilController extends Controller
                 'mensaje' => $e->getMessage(),
             ]);
 
-            return response()->json(['message' => 'Ocurrió un error al eliminar la cuenta.'], 500);
+            return response()->json(['message' => 'Err:Ocurrió un error al eliminar la cuenta.'], 500);
         }
     }
 
@@ -174,7 +174,7 @@ class PerfilController extends Controller
                 'mensaje' => $e->getMessage(),
             ]);
 
-            return response()->json(['message' => 'Ocurrió un error al obtener el usuario.'], 500);
+            return response()->json(['message' => 'Err:Ocurrió un error al obtener el usuario.'], 500);
         }
     }
 
@@ -199,7 +199,7 @@ class PerfilController extends Controller
                 'mensaje' => $e->getMessage(),
             ]);
 
-            return response()->json(['message' => 'Ocurrió un error al eliminar el usuario por email.'], 500);
+            return response()->json(['message' => 'Err:Ocurrió un error al eliminar el usuario por email.'], 500);
         }
     }
 }

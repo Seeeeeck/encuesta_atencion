@@ -607,6 +607,58 @@
   - **Fase 04 completa (`listo`)**. Se decidió no agregar assert de `is_ok` en
     `test_enviar_encuesta`: el campo se setea en `EncuestaController` pero ningún endpoint lo lee
     todavía (no hay endpoint de estado), así que no aporta cubrir algo que no se consume.
+- **Fase 05 (admin backend) — en progreso**, rama `admin`:
+  - `app/Http/Middleware/EsAdmin.php` creado: `handle()` verifica `$request->user()->rol !== 'admin'`
+    y hace `abort(403, "El usuario no es administrador")` si no lo es; si es admin, `return $next($request)`.
+    Registrado como alias `es_admin` (usado en `routes/api.php` en `Route::middleware(['auth:sanctum',
+    'es_admin', 'throttle:60,1'])`).
+  - `app/Http/Controllers/Api/AdminController.php` creado (namespace `App\Http\Controllers\Api`,
+    **no** `Api\Admin` — se descartó ese subnamespace; hubo una versión intermedia en
+    `Api/Admin/UsuarioController.php` que se movió/renombró a este archivo) con 2 métodos, mismo
+    patrón `try/catch` + `Log::error()` que el resto de los controllers:
+    - `listarUsuarios()` — `GET /admin/usuarios`: `Usuario::paginate(10)`, responde `{"message":
+      ..., "usuarios": $usuarios}` (el paginador serializa con `data` + metadata `current_page`,
+      `last_page`, `per_page`, `total`, etc., anidado bajo la key `usuarios`).
+    - `obtenerUsuarioRespuestas()` — `GET /admin/usuarios/{id}/respuestas`: 3 validaciones en cadena,
+      cada una con su propio `404`: 1) usuario no existe (`Usuario::where('id', $id_usuario)->first()`
+      null); 2) usuario existe pero no tiene `Encuesta` (`El usuario aún no realiza la encuesta`);
+      3) la encuesta existe pero no tiene todas las respuestas — compara `count($respuestas) !==
+      Pregunta::count()` (dinámico, **no** hardcodeado a `10` — se corrigió durante el desarrollo
+      para no quedar desactualizado si cambia la cantidad de preguntas del seeder). Si pasa las 3,
+      responde `200` con `{"message": ..., "respuestas": $respuestas}`.
+  - Rutas en `routes/api.php`, grupo nuevo `Route::middleware(['auth:sanctum', 'es_admin',
+    'throttle:60,1'])`: `GET /admin/usuarios` → `listarUsuarios`, `GET /admin/usuarios/{id}/respuestas`
+    → `obtenerUsuarioRespuestas`. Reemplaza el closure placeholder que devolvía `1` a mano.
+  - **Convención nueva en toda la app**: los mensajes de error `500` (dentro de cada `catch`) ahora
+    llevan el prefijo `Err:` (ej. `"Err:Ocurrió un error al registrar el usuario."`). Aplicado en
+    `AuthController`, `EncuestaController`, `PerfilController` y `AdminController`.
+  - **Factories nuevas** para tests: `database/factories/UsuarioFactory.php`,
+    `EncuestaFactory.php` (usa `for($usuario, 'usuario')` para asociar), `RespuestaFactory.php`
+    (**solo** define `respuesta` con `fake()->randomElement([1,2,3,4,5])` — **no** define
+    `id_pregunta` ni `id_encuesta`, hay que pasarlos con `for()`/`sequence()` al llamarla).
+  - **Tests** en `tests/Feature/Api/admin/AdminController/Test.php` (namespace
+    `Tests\Feature\Api\admin\AdminController`, con `RefreshDatabase`), 9 tests, todos en verde:
+    - `test_listar_usuarios` (200 admin), `test_usuarios_authorization` (403 no-admin),
+      `test_listar_usuarios_sin_token` (401).
+    - `test_obtener_respuestas_sin_encuesta` (404, usuario sin `Encuesta`),
+      `test_obtener_respuestas_sin_respuestas` (404, encuesta sin todas las respuestas),
+      `test_obtener_respuestas_por_id_usuario` (200, 10 respuestas — `assertJsonCount(10,
+      'respuestas')`), `test_obtener_respuestas_id_equivocado_token_valido` (404, id de usuario
+      inexistente), `test_obtener_respuestas_sin_token` (401),
+      `test_obtener_respuestas_usuario_normal_sin_permiso` (403).
+    - **Bug de aislamiento encontrado y corregido** (mismo patrón que ya se había visto en la Fase
+      04): las secuencias de Postgres no son transaccionales, así que sembrar `Pregunta` con el
+      seeder sin `Pregunta::truncate()` antes hacía que los ids arrancaran en 11, 21, etc. en tests
+      sucesivos de la misma clase — rompía los `id_pregunta` hardcodeados (1 a 10) usados en el
+      `sequence()` de `Respuesta::factory()`. Se agregó `Pregunta::truncate()` antes de cada
+      `PreguntaSeeder::run()` en estos tests.
+    - Para variar el `id_pregunta` en las 10 `Respuesta` creadas por test (evitando el índice único
+      `(id_encuesta, id_pregunta)`) se usa `->sequence(['id_pregunta' => 1], ['id_pregunta' => 2],
+      ...)` encadenado a la factory — permite asignar un valor distinto en cada `create()` sucesivo
+      sin tener que resolverlo dentro de la propia `definition()` de la factory (que no tiene forma
+      de recordar qué valores ya usó en llamadas anteriores).
+  - **Pendiente para cerrar la Fase 05**: `Admin/MetricasController` (`GET /admin/metricas`),
+    `PUT /admin/usuarios/{id}` (editar), `DELETE /admin/usuarios/{id}` (eliminar con cascada).
 - **Logs**: se usa `storage/logs/laravel.log` (canal `single` por defecto de Laravel). No se
   creó una carpeta `/logs` aparte — el paso 5 de la Fase 00 se marcó listo así.
 - **`.gitignore`**: el que trae Laravel 11+ ya cubre `.env`, `/vendor`, `/node_modules` y todo
@@ -641,13 +693,15 @@ Relaciones: Usuario 1—N Encuesta; Encuesta 1—N Respuesta; Pregunta 1—N Res
   `GET /me/actualizar/correo/verificacion/firma` (name: `verification.verify.sign`),
   `PUT /me/actualizar/correo` (name: `update.email`).
 - Público: `GET /health`.
+- Admin (auth:sanctum + middleware `es_admin`): `GET /admin/usuarios` (paginado),
+  `GET /admin/usuarios/{id}/respuestas`.
 - **Rate limiting**: middleware `throttle:60,1` aplicado a todos los grupos de rutas API
-  (públicas, signed, auth:sanctum). 60 requests por minuto.
+  (públicas, signed, auth:sanctum, admin). 60 requests por minuto.
 - Encuesta (pendiente): `GET /preguntas`, `POST /encuesta/iniciar`, `GET /encuesta`,
   `PUT /encuesta/respuestas/{idPregunta}`, `POST /encuesta/enviar`, `GET /encuesta/estado`,
   `GET /encuesta/compartir`.
-- Admin (pendiente, `/api/admin`, middleware rol admin): `GET /metricas`, `GET /usuarios`,
-  `GET /usuarios/{id}/respuestas`, `PUT /usuarios/{id}`, `DELETE /usuarios/{id}`.
+- Admin (pendiente, `/api/admin`): `GET /metricas`, `PUT /usuarios/{id}`,
+  `DELETE /usuarios/{id}`.
 
 ## Decisiones
 - Rol admin mediante columna `rol` en `usuario` (no tabla de roles aparte).

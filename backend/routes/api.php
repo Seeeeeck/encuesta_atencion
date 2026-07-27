@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EncuestaController;
 use App\Http\Controllers\Api\PerfilController;
@@ -41,14 +42,11 @@ Route::middleware(["signed", 'throttle:60,1'])->group(function () {
 });
 
 //Api de admin
-Route::middleware(['auth:sanctum', 'es_admin'])
+Route::middleware(['auth:sanctum', 'es_admin','throttle:60,1'])
     ->group(function () {
-
-        Route::get("/admin/usuarios", function () {
-            return 1;
-        });
+        Route::get("/admin/usuarios", [AdminController::class, 'listarUsuarios']);
+        Route::get('/admin/usuarios/{id}/respuestas',[AdminController::class,'obtenerUsuarioRespuestas']);
     });
-
 
 //TEST
 Route::get("user/email", [PerfilController::class, "showUserByEmail"]);
