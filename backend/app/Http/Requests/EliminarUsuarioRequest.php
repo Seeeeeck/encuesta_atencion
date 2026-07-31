@@ -4,9 +4,9 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
+use Override;
 
-class UpdateCorreoRequest extends FormRequest
+class EliminarUsuarioRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,21 +24,16 @@ class UpdateCorreoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'correo'=>"required|email|unique:usuario,correo"
+            "id"=>"required|numeric"
         ];
     }
 
-    /**
-     * Get the custom validation messages that apply to the request.
-     *
-     * @return array<string, string>
-     */
-    public function messages(): array
+    #[Override]
+    public function messages()
     {
         return [
-            'correo.required'=>"El correo es requerido",
-            'correo.email'=>"El correo debe ser válido",
-            'correo.unique'=>"El correo ya existe en la base de datos"
+            "id.required"=>"El id es requerido",
+            'id.numeric'=>"El id debe ser un número"
         ];
     }
 }

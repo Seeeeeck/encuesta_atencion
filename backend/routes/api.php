@@ -46,6 +46,8 @@ Route::middleware(['auth:sanctum', 'es_admin','throttle:60,1'])
     ->group(function () {
         Route::get("/admin/usuarios", [AdminController::class, 'listarUsuarios']);
         Route::get('/admin/usuarios/{id}/respuestas',[AdminController::class,'obtenerUsuarioRespuestas']);
+        Route::put("/admin/usuario/editar",[AdminController::class,'editarUsuario']);
+        Route::delete("/admin/usuario/eliminar",[AdminController::class,'eliminarUsuario']);
     });
 
 //TEST

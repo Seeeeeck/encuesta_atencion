@@ -657,8 +657,71 @@
       ...)` encadenado a la factory — permite asignar un valor distinto en cada `create()` sucesivo
       sin tener que resolverlo dentro de la propia `definition()` de la factory (que no tiene forma
       de recordar qué valores ya usó en llamadas anteriores).
-  - **Pendiente para cerrar la Fase 05**: `Admin/MetricasController` (`GET /admin/metricas`),
-    `PUT /admin/usuarios/{id}` (editar), `DELETE /admin/usuarios/{id}` (eliminar con cascada).
+  - **`editarUsuario()` agregado** a `AdminController` — `PUT /admin/usuario/editar` (nota:
+    ruta plana, no `PUT /admin/usuarios/{id}`; el `id` va en el body). Valida con
+    `App\Http\Requests\editarUsuarioRequest` (`id` required|numeric|exists:usuario,id;
+    `nombre` min:3|max:100|string; `clave` string|min:5|max:100 + 2 regex (mayúscula y
+    símbolo); `edad` nullable|integer|min:1|max:200; `sexo` nullable|in:M,F,N/R|string;
+    `rol` in:admin,usuario|string; `regla` required_without_all:nombre,edad,sexo,rol,clave
+    — exige que venga al menos uno de los 5 campos editables). El controller actualiza
+    solo los campos presentes vía `$request->filled(...)` (edición parcial), 404 si el
+    `id` no corresponde a un usuario, 500 si `save()` falla, mismo patrón `try/catch` +
+    `Log::error()` con prefijo `Err:`. `eliminarUsuario()` **creado como stub vacío**
+    (`Request $request) {}`), ruta `DELETE /admin/usuario/eliminar` ya registrada — falta
+    la implementación.
+  - **Tests de `editarUsuario`** agregados a `tests/Feature/Api/admin/AdminController/Test.php`,
+    usando `#[DataProvider]` de PHPUnit para no repetir el mismo test por cada campo/regla:
+    - `datosInvalidosProvider()` + `test_editar_usuario_datos_invalidos(string $campo, $valor,
+      string $errorEsperado)`: cubre las 3 reglas de `id` (faltante/no numérico/no existe) y
+      cada regla de `nombre`, `clave` (min, max, sin mayúscula, sin símbolo), `edad`, `sexo`,
+      `rol`. Payload se arma como `['id' => $usuario->id, $campo => $valor]` (si `$campo`
+      es `'id'`, la segunda entrada pisa a la primera). Assert: `422` +
+      `assertJsonValidationErrors($campo)` — clave del JSON de errores es el **nombre del
+      campo**, nunca `campo.regla` (esa notación solo existe dentro de `messages()` del
+      FormRequest, no en la respuesta).
+    - `datosValidosProvider()` + `test_editar_usuario_datos_validos(...)`: cubre los valores
+      límite válidos de cada regla (min/max exactos, cada valor de los `in:`). Assert: `200`
+      + `assertJson(...)` comparando contra `Usuario::where('id', $usuario->id)->first()`
+      (**no** contra la variable `$usuario` original en memoria, que no se refresca sola
+      tras el `put()` — bug encontrado durante el desarrollo: comparar contra el objeto viejo
+      hacía que el test fallara mostrando el valor nuevo correcto contra el esperado viejo).
+    - `test_editar_usuario_ningun_valor_enviado()`: caso aparte (no cabe en ningún data
+      provider por campo, ya que valida la *ausencia* de todos los campos editables a la
+      vez) — payload solo con `id`, espera `422` + `assertJsonValidationErrors('regla')`.
+  - **`editarUsuarioRequest` renombrado a `EditarUsuarioRequest`** (PascalCase, convención
+    Laravel) — mismo contenido, solo el nombre del archivo/clase cambia; `AdminController`
+    actualizado para importar la clase nueva.
+  - **`eliminarUsuario()` implementado** (ya no es un stub) — `DELETE /admin/usuario/eliminar`,
+    validado por `EliminarUsuarioRequest` (`id` required|numeric): busca el `Usuario` por
+    `id`, 404 si no existe; **revoca los tokens de Sanctum antes de destruir** (`$usuario->
+    tokens()->delete()` → `Usuario::destroy($request->id)`) — mismo motivo que ya se había
+    encontrado en `PerfilController::destroy()`: `personal_access_tokens` no tiene FK real
+    hacia `usuario` (relación polimórfica sin constraint a nivel BD), así que si se borra el
+    usuario primero, los tokens quedan huérfanos. 500 si `destroy()` no borra ninguna fila,
+    200 si se elimina. Mismo patrón `try/catch` + `Log::error()` con prefijo `Err:`.
+  - **Tests de `eliminarUsuario`** agregados a `tests/Feature/Api/admin/AdminController/Test.php`:
+    `test_eliminar_usuario` (200; crea un token para el `$usuario` a eliminar, lo revoca a mano
+    para simular el estado esperado tras el endpoint y confirma `count() === 0`; llama al
+    endpoint autenticado **como admin** y confirma con `assertNull(Usuario::where('id', ...)
+    ->first())` que el usuario ya no existe) y `test_eliminar_usuario_inexistente` (404, id
+    que no existe). **Bug encontrado y corregido durante el desarrollo del test**: la primera
+    versión reasignaba la variable `$token` (creada para `$user_admin` en la línea de
+    autenticación) al crear el token de `$usuario`, pisándola — la request `DELETE` terminaba
+    mandando el token del usuario normal (ya revocado por la propia prueba, así que ni
+    siquiera un token válido) en vez del token del admin, y el endpoint nunca llegaba a
+    ejecutarse de verdad (el `assertNull` pasaba por motivos equivocados o fallaba según el
+    caso). Corregido sin reutilizar la variable `$token` para el usuario normal.
+  - **`UpdateCorreoRequest` actualizado**: se habían vaciado sus `rules()`/`messages()` a
+    propósito (ver más arriba, la validación de `correo` se confiaba solo al middleware
+    `signed` + lógica inline). Se revirtió esa decisión: ahora valida `correo` con
+    `required|email|unique:usuario,correo` (con sus 3 mensajes en español), sumando una capa
+    de validación explícita sobre el endpoint `PUT /me/actualizar/correo` además del `signed`.
+  - Rutas nuevas en `routes/api.php`, dentro del grupo `auth:sanctum` + `es_admin`:
+    `PUT /admin/usuario/editar` → `editarUsuario`, `DELETE /admin/usuario/eliminar` →
+    `eliminarUsuario`.
+  - Suite completa verificada tras estos cambios: `php artisan test` → **82 tests, 164
+    assertions, todos en verde**.
+  - **Pendiente para cerrar la Fase 05**: `Admin/MetricasController` (`GET /admin/metricas`).
 - **Logs**: se usa `storage/logs/laravel.log` (canal `single` por defecto de Laravel). No se
   creó una carpeta `/logs` aparte — el paso 5 de la Fase 00 se marcó listo así.
 - **`.gitignore`**: el que trae Laravel 11+ ya cubre `.env`, `/vendor`, `/node_modules` y todo
@@ -694,14 +757,15 @@ Relaciones: Usuario 1—N Encuesta; Encuesta 1—N Respuesta; Pregunta 1—N Res
   `PUT /me/actualizar/correo` (name: `update.email`).
 - Público: `GET /health`.
 - Admin (auth:sanctum + middleware `es_admin`): `GET /admin/usuarios` (paginado),
-  `GET /admin/usuarios/{id}/respuestas`.
+  `GET /admin/usuarios/{id}/respuestas`, `PUT /admin/usuario/editar` (edición parcial,
+  validado por `EditarUsuarioRequest`), `DELETE /admin/usuario/eliminar` (revoca tokens
+  Sanctum antes de borrar, validado por `EliminarUsuarioRequest`).
 - **Rate limiting**: middleware `throttle:60,1` aplicado a todos los grupos de rutas API
   (públicas, signed, auth:sanctum, admin). 60 requests por minuto.
 - Encuesta (pendiente): `GET /preguntas`, `POST /encuesta/iniciar`, `GET /encuesta`,
   `PUT /encuesta/respuestas/{idPregunta}`, `POST /encuesta/enviar`, `GET /encuesta/estado`,
   `GET /encuesta/compartir`.
-- Admin (pendiente, `/api/admin`): `GET /metricas`, `PUT /usuarios/{id}`,
-  `DELETE /usuarios/{id}`.
+- Admin (pendiente): `GET /admin/metricas`.
 
 ## Decisiones
 - Rol admin mediante columna `rol` en `usuario` (no tabla de roles aparte).
