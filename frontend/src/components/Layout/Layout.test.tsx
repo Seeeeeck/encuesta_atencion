@@ -100,7 +100,7 @@ test('avisa que falta verificar el correo', () => {
 
   renderLayout();
 
-  expect(screen.getByText(/te mandamos un correo para verificar tu cuenta/i)).toBeInTheDocument();
+  expect(screen.getByText(/te enviamos un correo para verificar tu cuenta/i)).toBeInTheDocument();
 });
 
 test('con el correo verificado no muestra el aviso', () => {
@@ -108,7 +108,7 @@ test('con el correo verificado no muestra el aviso', () => {
 
   renderLayout();
 
-  expect(screen.queryByText(/te mandamos un correo para verificar tu cuenta/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/te enviamos un correo para verificar tu cuenta/i)).not.toBeInTheDocument();
 });
 
 test('al cambiar de página vuelve arriba', async () => {

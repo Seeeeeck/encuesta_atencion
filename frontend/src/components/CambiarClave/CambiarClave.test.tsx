@@ -14,7 +14,7 @@ beforeEach(() => {
 async function completar(actual: string, nueva: string, repetida: string) {
   if (actual) await userEvent.type(screen.getByLabelText('Clave actual'), actual);
   if (nueva) await userEvent.type(screen.getByLabelText('Clave nueva'), nueva);
-  if (repetida) await userEvent.type(screen.getByLabelText('Repetí la clave nueva'), repetida);
+  if (repetida) await userEvent.type(screen.getByLabelText('Repite la clave nueva'), repetida);
   await userEvent.click(screen.getByRole('button', { name: 'Cambiar clave' }));
 }
 
@@ -24,7 +24,7 @@ test('valida los tres campos antes de enviar', async () => {
 
   await completar('', 'abc', 'abd');
 
-  expect(screen.getByText('Ingresá tu clave actual.')).toBeInTheDocument();
+  expect(screen.getByText('Ingresa tu clave actual.')).toBeInTheDocument();
   expect(screen.getByText('La clave debe tener al menos 5 caracteres.')).toBeInTheDocument();
   expect(screen.getByText('Las claves no coinciden.')).toBeInTheDocument();
   expect(peticiones).toHaveLength(0);

@@ -26,7 +26,7 @@ test('muestra el índice ajustado de cada pregunta', async () => {
   renderConRutas(<AdminMetricas />);
 
   expect(await screen.findByRole('figure', { name: 'Índice de atención por pregunta' })).toBeInTheDocument();
-  expect(screen.getByRole('listitem', { name: 'P1: 2,60 de 5, 10 respuestas' })).toBeInTheDocument();
+  expect(screen.getByRole('listitem', { name: 'P1: 2.60 de 5, 10 respuestas' })).toBeInTheDocument();
 });
 
 test('muestra el índice por edad y por sexo con nombres legibles', async () => {
@@ -34,11 +34,11 @@ test('muestra el índice por edad y por sexo con nombres legibles', async () => 
 
   renderConRutas(<AdminMetricas />);
 
-  expect(await screen.findByRole('listitem', { name: '<18: 2,60 de 5, 1 encuesta' })).toBeInTheDocument();
+  expect(await screen.findByRole('listitem', { name: '<18: 2.60 de 5, 1 encuesta' })).toBeInTheDocument();
   expect(screen.getByRole('listitem', { name: '18-25: sin datos, 0 encuestas' })).toBeInTheDocument();
-  expect(screen.getByRole('listitem', { name: 'Masculino: 3,03 de 5, 8 encuestas' })).toBeInTheDocument();
+  expect(screen.getByRole('listitem', { name: 'Masculino: 3.03 de 5, 8 encuestas' })).toBeInTheDocument();
   expect(screen.getByRole('listitem', { name: 'Prefiero no responder: sin datos, 0 encuestas' })).toBeInTheDocument();
-  expect(screen.getByRole('listitem', { name: 'Sin dato: 3,00 de 5, 1 encuesta' })).toBeInTheDocument();
+  expect(screen.getByRole('listitem', { name: 'Sin dato: 3.00 de 5, 1 encuesta' })).toBeInTheDocument();
 });
 
 test('incluye la distribución de respuestas', async () => {

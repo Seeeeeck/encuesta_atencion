@@ -9,8 +9,8 @@ import {
 
 describe('validarNombre', () => {
   test.each([
-    ['', 'Ingresá tu nombre.'],
-    ['   ', 'Ingresá tu nombre.'],
+    ['', 'Ingresa tu nombre.'],
+    ['   ', 'Ingresa tu nombre.'],
     ['Al', 'El nombre debe tener al menos 3 caracteres.'],
     ['a'.repeat(101), 'El nombre no puede superar los 100 caracteres.'],
   ])('"%s" es inválido', (nombre, error) => {
@@ -25,10 +25,10 @@ describe('validarNombre', () => {
 
 describe('validarCorreo', () => {
   test.each([
-    ['', 'Ingresá tu correo.'],
-    ['ana', 'Ingresá un correo válido.'],
-    ['ana@', 'Ingresá un correo válido.'],
-    ['ana@test', 'Ingresá un correo válido.'],
+    ['', 'Ingresa tu correo.'],
+    ['ana', 'Ingresa un correo válido.'],
+    ['ana@', 'Ingresa un correo válido.'],
+    ['ana@test', 'Ingresa un correo válido.'],
     [`${'a'.repeat(140)}@test.local`, 'El correo no puede superar los 150 caracteres.'],
   ])('"%s" es inválido', (correo, error) => {
     expect(validarCorreo(correo)).toBe(error);
@@ -41,7 +41,7 @@ describe('validarCorreo', () => {
 
 describe('validarClaveNueva', () => {
   test.each([
-    ['', 'Ingresá una clave.'],
+    ['', 'Ingresa una clave.'],
     ['Ab!c', 'La clave debe tener al menos 5 caracteres.'],
     [`A!${'a'.repeat(99)}`, 'La clave no puede superar los 100 caracteres.'],
     ['abcde!', 'La clave debe tener al menos una mayúscula.'],
@@ -80,11 +80,11 @@ describe('validarRegistro', () => {
 
   test('junta los errores de cada campo', () => {
     expect(validarRegistro({ nombre: '', correo: 'x', clave: 'abc', edad: '0', sexo: 'X' })).toEqual({
-      nombre: 'Ingresá tu nombre.',
-      correo: 'Ingresá un correo válido.',
+      nombre: 'Ingresa tu nombre.',
+      correo: 'Ingresa un correo válido.',
       clave: 'La clave debe tener al menos 5 caracteres.',
       edad: 'La edad debe ser un número entero entre 1 y 200.',
-      sexo: 'Elegí una opción válida.',
+      sexo: 'Elige una opción válida.',
     });
   });
 
@@ -96,8 +96,8 @@ describe('validarRegistro', () => {
 describe('validarLogin', () => {
   test('pide correo y clave', () => {
     expect(validarLogin({ correo: '', clave: '' })).toEqual({
-      correo: 'Ingresá tu correo.',
-      clave: 'Ingresá tu clave.',
+      correo: 'Ingresa tu correo.',
+      clave: 'Ingresa tu clave.',
     });
   });
 

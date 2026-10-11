@@ -15,7 +15,7 @@ export function Inicio() {
       </p>
       <ul className="inicio__datos">
         <li>10 afirmaciones</li>
-        <li>Respondés del 1 al 5</li>
+        <li>Respondes del 1 al 5</li>
         <li>Menos de 3 minutos</li>
       </ul>
       <div className="inicio__acciones">

@@ -80,7 +80,7 @@ test('valida los datos antes de enviar', async () => {
   await userEvent.type(screen.getByLabelText('Correo'), 'no-es-correo');
   await guardar();
 
-  expect(screen.getByText('Ingresá un correo válido.')).toBeInTheDocument();
+  expect(screen.getByText('Ingresa un correo válido.')).toBeInTheDocument();
   expect(peticiones).toHaveLength(0);
 });
 

@@ -74,7 +74,7 @@ export function Login() {
         </button>
       </form>
       <p className="formulario__pie">
-        ¿No tenés cuenta? <Link to="/registro">Creá una</Link>
+        ¿No tienes cuenta? <Link to="/registro">Crea una</Link>
       </p>
     </section>
   );

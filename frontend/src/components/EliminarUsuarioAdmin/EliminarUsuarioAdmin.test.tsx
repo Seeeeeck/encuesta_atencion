@@ -70,5 +70,5 @@ test('un admin no puede eliminarse a sí mismo desde el panel', () => {
   renderComponente(adminDePrueba);
 
   expect(screen.queryByRole('button', { name: 'Eliminar usuario' })).not.toBeInTheDocument();
-  expect(screen.getByText(/Para eliminar tu propia cuenta usá tu perfil/)).toBeInTheDocument();
+  expect(screen.getByText(/Para eliminar tu propia cuenta usa tu perfil/)).toBeInTheDocument();
 });

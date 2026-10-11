@@ -10,7 +10,7 @@ const sexosPermitidos = ['M', 'F', 'N/R'];
 export function validarNombre(nombre: string): string | null {
   const limpio = nombre.trim();
   if (!limpio) {
-    return 'Ingresá tu nombre.';
+    return 'Ingresa tu nombre.';
   }
   if (limpio.length < 3) {
     return 'El nombre debe tener al menos 3 caracteres.';
@@ -24,10 +24,10 @@ export function validarNombre(nombre: string): string | null {
 export function validarCorreo(correo: string): string | null {
   const limpio = correo.trim();
   if (!limpio) {
-    return 'Ingresá tu correo.';
+    return 'Ingresa tu correo.';
   }
   if (!formatoCorreo.test(limpio)) {
-    return 'Ingresá un correo válido.';
+    return 'Ingresa un correo válido.';
   }
   if (limpio.length > 150) {
     return 'El correo no puede superar los 150 caracteres.';
@@ -37,7 +37,7 @@ export function validarCorreo(correo: string): string | null {
 
 export function validarClaveNueva(clave: string): string | null {
   if (!clave) {
-    return 'Ingresá una clave.';
+    return 'Ingresa una clave.';
   }
   if (clave.length < 5) {
     return 'La clave debe tener al menos 5 caracteres.';
@@ -89,13 +89,13 @@ export function validarRegistro(datos: FormularioRegistro): ErroresFormulario {
     correo: validarCorreo(datos.correo),
     clave: validarClaveNueva(datos.clave),
     edad: validarEdad(datos.edad),
-    sexo: datos.sexo && !sexosPermitidos.includes(datos.sexo) ? 'Elegí una opción válida.' : null,
+    sexo: datos.sexo && !sexosPermitidos.includes(datos.sexo) ? 'Elige una opción válida.' : null,
   });
 }
 
 export function validarLogin(datos: { correo: string; clave: string }): ErroresFormulario {
   return juntarErrores({
     correo: validarCorreo(datos.correo),
-    clave: datos.clave ? null : 'Ingresá tu clave.',
+    clave: datos.clave ? null : 'Ingresa tu clave.',
   });
 }

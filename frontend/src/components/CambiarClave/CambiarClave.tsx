@@ -19,7 +19,7 @@ export function CambiarClave() {
 
   function validar(): ErroresFormulario {
     const resultado: ErroresFormulario = {};
-    if (!actual) resultado.clave_actual = 'Ingresá tu clave actual.';
+    if (!actual) resultado.clave_actual = 'Ingresa tu clave actual.';
     const errorNueva = validarClaveNueva(nueva);
     if (errorNueva) resultado.clave_nueva = errorNueva;
     if (nueva !== repetida) resultado.repetida = 'Las claves no coinciden.';
@@ -82,7 +82,7 @@ export function CambiarClave() {
         ayuda="Mínimo 5 caracteres, con al menos una mayúscula y un símbolo."
       />
       <CampoFormulario
-        etiqueta="Repetí la clave nueva"
+        etiqueta="Repite la clave nueva"
         nombre="repetida"
         tipo="password"
         autoComplete="new-password"

@@ -27,13 +27,13 @@ export function SolicitarCambioCorreo() {
     <div className="formulario">
       <h2>Correo</h2>
       <p>
-        Tu correo es <strong>{usuario?.correo}</strong>. Para cambiarlo te mandamos un link a ese
+        Tu correo es <strong>{usuario?.correo}</strong>. Para cambiarlo te enviaremos un link a ese
         correo; el link vence en 60 minutos.
       </p>
       <MensajeError mensaje={mensaje} />
       {enviado ? (
         <p className="mensaje-exito">
-          Te mandamos un link a {usuario?.correo}. Abrilo para elegir tu nuevo correo.
+          Te enviamos un link a {usuario?.correo}. Ábrelo para elegir tu nuevo correo.
         </p>
       ) : (
         <button type="button" className="boton boton--secundario" onClick={pedir} disabled={enviando}>

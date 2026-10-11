@@ -20,10 +20,10 @@ test('muestra las encuestas completadas y el porcentaje sobre los usuarios', () 
   expect(indicador('Encuestas completadas').getByText('75 % de los usuarios')).toBeInTheDocument();
 });
 
-test('muestra el índice de atención sobre 5 con coma decimal', () => {
+test('muestra el índice de atención sobre 5 con punto decimal', () => {
   render(<ResumenMetricas resumen={resumen} />);
 
-  expect(indicador('Índice de atención').getByText('2,97')).toBeInTheDocument();
+  expect(indicador('Índice de atención').getByText('2.97')).toBeInTheDocument();
   expect(indicador('Índice de atención').getByText('de 5')).toBeInTheDocument();
 });
 

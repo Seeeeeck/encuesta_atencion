@@ -34,8 +34,8 @@ test('sin datos muestra los errores y no llama a la API', async () => {
 
   await completar('', '');
 
-  expect(screen.getByText('Ingresá tu correo.')).toBeInTheDocument();
-  expect(screen.getByText('Ingresá tu clave.')).toBeInTheDocument();
+  expect(screen.getByText('Ingresa tu correo.')).toBeInTheDocument();
+  expect(screen.getByText('Ingresa tu clave.')).toBeInTheDocument();
   expect(peticiones).toHaveLength(0);
 });
 
@@ -93,5 +93,5 @@ test('muestra en cada campo los errores de validación del backend', async () =>
 test('ofrece crear una cuenta', () => {
   renderLogin();
 
-  expect(screen.getByRole('link', { name: 'Creá una' })).toHaveAttribute('href', '/registro');
+  expect(screen.getByRole('link', { name: 'Crea una' })).toHaveAttribute('href', '/registro');
 });

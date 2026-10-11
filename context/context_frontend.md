@@ -156,7 +156,7 @@
       claro `#a84d27 #e08e5a #c9c7c2 #4db4cc #00739c`, oscuro `#d17746 #964b2c #5a5955 #006d95
       #29a1c1`. La paleta salvia original no alcanzaba el piso de croma ni la separación entre tonos
       vecinos; los tonos claros quedan con contraste < 3:1, compensado con leyenda + tabla.
-    - `utils/formato.ts`: números con coma decimal (`es-AR`), porcentajes y plurales.
+    - `utils/formato.ts`: números con formato `es-419`, porcentajes y plurales.
   - **Usuarios** (`AdminUsuarios`): tabla paginada (la página va en la URL), link "Ver" con
     `aria-label` que pasa el usuario en el `state` de la navegación. **Sin búsqueda**: la API no la
     soporta y filtrar solo la página actual sería engañoso.
@@ -178,6 +178,19 @@
     contra la API real con un admin temporal `@test.local`: métricas (barras, distribución divergente,
     tooltip con teclado, tabla), lista paginada, detalle con respuestas, edición parcial (solo edad y
     rol) verificada en la BD, eliminación, scroll al cambiar de ruta. Usuarios de prueba borrados.
+- **Idioma y plugins de diseño** (rama `frontend-idioma-plugins`, 2026-10-11, pedido del usuario):
+  - Todos los textos pasaron de voseo rioplatense a **español latino neutro con tuteo**
+    ("Ingresá" → "Ingresa", "¿No tenés cuenta?" → "¿No tienes cuenta?", "Elegí" → "Elige",
+    "Te mandamos" → "Te enviamos", etc.). Números con `Intl.NumberFormat('es-419')` (**punto
+    decimal**: 2.97) en `utils/formato.ts`; `index.html` con `lang="es-419"`. Se mantienen "clave" y
+    "link" (coinciden con los mensajes del backend, que no tenía voseo). Regla agregada a las
+    convenciones de `CLAUDE.md`.
+  - Plugins de Claude Code instalados **solo para este proyecto** (`.claude/settings.json`,
+    `enabledPlugins`): `frontend-design@claude-plugins-official` (skill oficial de Anthropic) e
+    `impeccable@impeccable` (pbakaus/impeccable, 1 skill con comandos como `/impeccable critique`,
+    `/impeccable audit`, `/impeccable polish`). **Ojo**: Impeccable trae hooks que corren su script
+    en SessionStart, después de cada Edit/Write y en Stop. El marketplace se declara en
+    `extraKnownMarketplaces` para que funcione al clonar el repo. Se activan al reiniciar la sesión.
 - **Comandos de desarrollo** documentados en la raíz `CLAUDE.md` (sección Comandos):
   `npm install`, `npm run dev`, `npm run build`, `npm run lint`.
 

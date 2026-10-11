@@ -25,7 +25,7 @@ test('pide el link y muestra la confirmación', async () => {
 
   await pedirLink();
 
-  expect(await screen.findByText(/Te mandamos un link a ana@test\.local/)).toBeInTheDocument();
+  expect(await screen.findByText(/Te enviamos un link a ana@test\.local/)).toBeInTheDocument();
   expect(peticiones[0]).toMatchObject({ metodo: 'GET', url: '/me/actualizar/correo/verificacion' });
 });
 

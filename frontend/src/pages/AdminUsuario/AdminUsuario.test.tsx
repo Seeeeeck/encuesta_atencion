@@ -38,14 +38,14 @@ test('muestra los datos del usuario que llegan desde la lista', () => {
 test('sin datos del usuario pide abrirlo desde la lista', () => {
   renderPagina();
 
-  expect(screen.getByText('Abrí el usuario desde la lista de usuarios.')).toBeInTheDocument();
+  expect(screen.getByText('Abre el usuario desde la lista de usuarios.')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Ir a la lista' })).toHaveAttribute('href', '/admin/usuarios');
 });
 
 test('si el id de la URL no coincide con los datos, también pide abrirlo desde la lista', () => {
   renderPagina({ usuario: { ...otro, id: 99 } });
 
-  expect(screen.getByText('Abrí el usuario desde la lista de usuarios.')).toBeInTheDocument();
+  expect(screen.getByText('Abre el usuario desde la lista de usuarios.')).toBeInTheDocument();
 });
 
 test('después de editar muestra los datos nuevos', async () => {
