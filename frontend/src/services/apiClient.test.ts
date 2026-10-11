@@ -91,3 +91,15 @@ test('un 401 sin token (login fallido) no toca la sesión', async () => {
 
   expect(avisar).not.toHaveBeenCalled();
 });
+
+test('un 401 de una request marcada con sinCierreDeSesion no cierra la sesión', async () => {
+  guardarSesion('tok-123', usuario);
+  const avisar = jest.fn();
+  alExpirarSesion(avisar);
+  apiClient.defaults.adapter = responderCon(401, { message: 'La clave actual no corresponde al usuario' });
+
+  await expect(apiClient.put('/me/actualizar/clave', {}, { sinCierreDeSesion: true })).rejects.toBeTruthy();
+
+  expect(leerSesion()).not.toBeNull();
+  expect(avisar).not.toHaveBeenCalled();
+});

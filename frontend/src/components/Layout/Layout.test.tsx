@@ -94,3 +94,19 @@ test('no muestra el aviso si el servidor responde', async () => {
   await waitFor(() => expect(peticiones).toHaveLength(1));
   expect(screen.queryByText(/no se pudo conectar con el servidor/i)).not.toBeInTheDocument();
 });
+
+test('avisa que falta verificar el correo', () => {
+  guardarSesion('tok', { ...usuarioDePrueba, is_verified: false });
+
+  renderLayout();
+
+  expect(screen.getByText(/te mandamos un correo para verificar tu cuenta/i)).toBeInTheDocument();
+});
+
+test('con el correo verificado no muestra el aviso', () => {
+  guardarSesion('tok', usuarioDePrueba);
+
+  renderLayout();
+
+  expect(screen.queryByText(/te mandamos un correo para verificar tu cuenta/i)).not.toBeInTheDocument();
+});

@@ -1,0 +1,46 @@
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.campo__etiqueta {
+  font-weight: 600;
+}
+
+.campo__opcional {
+  font-weight: 400;
+  color: var(--texto-suave);
+}
+
+.campo__control {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--fondo);
+  color: var(--texto);
+  font: inherit;
+}
+
+.campo__control:focus-visible {
+  border-color: var(--primario);
+}
+
+.campo--error .campo__control {
+  border-color: var(--error);
+}
+
+.campo__error,
+.campo__ayuda {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.campo__error {
+  color: var(--error);
+}
+
+.campo__ayuda {
+  color: var(--texto-suave);
+}

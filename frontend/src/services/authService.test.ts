@@ -130,3 +130,11 @@ test('cambiarCorreo ordena el query como lo firmó Laravel y manda el correo en 
     cuerpo: { correo: 'nuevo@test.local' },
   });
 });
+
+test('una clave actual incorrecta (401) no cierra la sesión', async () => {
+  const peticiones = servidorFalso({ status: 401, data: { message: 'La clave actual no correspode al usuario' } });
+
+  await expect(actualizarClave('Mala!', 'Nueva!')).rejects.toBeTruthy();
+
+  expect(peticiones[0].config.sinCierreDeSesion).toBe(true);
+});
