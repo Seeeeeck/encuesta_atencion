@@ -56,7 +56,7 @@ export function CampoFormulario({
       </label>
       {opciones ? (
         <select {...comunes} onChange={(evento) => onCambio(evento.target.value)}>
-          <option value="">Elegí una opción</option>
+          <option value="">Elige una opción</option>
           {opciones.map((opcion) => (
             <option key={opcion.valor} value={opcion.valor}>
               {opcion.texto}

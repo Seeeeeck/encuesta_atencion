@@ -33,9 +33,9 @@ test('sin datos muestra los errores y no llama a la API', async () => {
 
   await userEvent.click(botonCrear());
 
-  expect(screen.getByText('Ingresá tu nombre.')).toBeInTheDocument();
-  expect(screen.getByText('Ingresá tu correo.')).toBeInTheDocument();
-  expect(screen.getByText('Ingresá una clave.')).toBeInTheDocument();
+  expect(screen.getByText('Ingresa tu nombre.')).toBeInTheDocument();
+  expect(screen.getByText('Ingresa tu correo.')).toBeInTheDocument();
+  expect(screen.getByText('Ingresa una clave.')).toBeInTheDocument();
   expect(peticiones).toHaveLength(0);
 });
 
@@ -99,5 +99,5 @@ test('un correo ya registrado se marca en el campo', async () => {
 test('ofrece ir al login', () => {
   renderRegistro();
 
-  expect(screen.getByRole('link', { name: 'Ingresá' })).toHaveAttribute('href', '/login');
+  expect(screen.getByRole('link', { name: 'Ingresa' })).toHaveAttribute('href', '/login');
 });

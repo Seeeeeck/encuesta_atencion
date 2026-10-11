@@ -20,7 +20,7 @@ export function AdminUsuario() {
   if (!usuario) {
     return (
       <section className="tarjeta">
-        <p>Abrí el usuario desde la lista de usuarios.</p>
+        <p>Abre el usuario desde la lista de usuarios.</p>
         <Link to="/admin/usuarios" className="boton">
           Ir a la lista
         </Link>

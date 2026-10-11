@@ -1,5 +1,5 @@
-const decimales = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const enteros = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 });
+const decimales = new Intl.NumberFormat('es-419', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const enteros = new Intl.NumberFormat('es-419', { maximumFractionDigits: 0 });
 
 export function formatearIndice(valor: number): string {
   return decimales.format(valor);

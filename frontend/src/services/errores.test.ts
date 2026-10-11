@@ -33,13 +33,13 @@ test('un 401 o 403 muestra el mensaje del backend', () => {
 
 test('un 429 pide esperar', () => {
   expect(extraerError(errorHttp(429, { message: 'Too Many Attempts.' })).mensaje).toBe(
-    'Demasiados intentos. Esperá un minuto y volvé a probar.',
+    'Demasiados intentos. Espera un minuto y vuelve a intentarlo.',
   );
 });
 
 test('un 500 no muestra el detalle interno', () => {
   expect(extraerError(errorHttp(500, { message: 'Err:Error al enviar encuesta' })).mensaje).toBe(
-    'Ocurrió un error en el servidor. Intentá de nuevo más tarde.',
+    'Ocurrió un error en el servidor. Intenta de nuevo más tarde.',
   );
 });
 

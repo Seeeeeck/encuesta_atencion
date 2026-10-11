@@ -64,7 +64,7 @@ test('valida el correo nuevo antes de enviarlo', async () => {
 
   await cambiarA('no-es-correo');
 
-  expect(screen.getByText('Ingresá un correo válido.')).toBeInTheDocument();
+  expect(screen.getByText('Ingresa un correo válido.')).toBeInTheDocument();
   expect(peticiones).toHaveLength(1);
 });
 

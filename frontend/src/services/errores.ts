@@ -20,10 +20,10 @@ export function extraerError(error: unknown): ErrorApi {
 
   const { status, data } = error.response;
   if (status === 429) {
-    return { mensaje: 'Demasiados intentos. Esperá un minuto y volvé a probar.', campos: {} };
+    return { mensaje: 'Demasiados intentos. Espera un minuto y vuelve a intentarlo.', campos: {} };
   }
   if (status >= 500) {
-    return { mensaje: 'Ocurrió un error en el servidor. Intentá de nuevo más tarde.', campos: {} };
+    return { mensaje: 'Ocurrió un error en el servidor. Intenta de nuevo más tarde.', campos: {} };
   }
 
   const campos: Record<string, string> = {};

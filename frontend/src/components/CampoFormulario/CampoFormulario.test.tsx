@@ -28,11 +28,11 @@ test('avisa los cambios de valor', async () => {
 });
 
 test('muestra el error y marca el campo como inválido', () => {
-  render(<CampoControlado error="Ingresá tu correo." />);
+  render(<CampoControlado error="Ingresa tu correo." />);
 
   const campo = screen.getByLabelText('Correo');
   expect(campo).toHaveAttribute('aria-invalid', 'true');
-  expect(campo).toHaveAccessibleDescription('Ingresá tu correo.');
+  expect(campo).toHaveAccessibleDescription('Ingresa tu correo.');
 });
 
 test('sin error el campo es válido', () => {

@@ -108,7 +108,7 @@ export function Registro() {
         </button>
       </form>
       <p className="formulario__pie">
-        ¿Ya tenés cuenta? <Link to="/login">Ingresá</Link>
+        ¿Ya tienes cuenta? <Link to="/login">Ingresa</Link>
       </p>
     </section>
   );

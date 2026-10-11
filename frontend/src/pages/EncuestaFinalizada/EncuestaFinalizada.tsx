@@ -41,7 +41,7 @@ export function EncuestaFinalizada() {
     <section className="pagina-angosta tarjeta formulario">
       <h1>¡Gracias por responder!</h1>
       <p>
-        Tus respuestas quedaron guardadas. Si conocés a alguien a quien le pueda interesar, compartile
+        Tus respuestas quedaron guardadas. Si conoces a alguien a quien le pueda interesar, compártele
         la encuesta: cuantas más respuestas, mejores conclusiones.
       </p>
       <CompartirLink url={`${window.location.origin}/`} />

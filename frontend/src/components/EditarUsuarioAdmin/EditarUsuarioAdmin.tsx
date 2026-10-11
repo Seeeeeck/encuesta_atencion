@@ -104,7 +104,7 @@ export function EditarUsuarioAdmin({ usuario, onGuardado }: Props) {
         valor={clave}
         onCambio={setClave}
         error={errores.clave}
-        ayuda="Dejala vacía para no cambiarla."
+        ayuda="Déjala vacía para no cambiarla."
         opcional
       />
       <CampoFormulario etiqueta="Edad" nombre="edad" tipo="number" valor={edad} onCambio={setEdad} error={errores.edad} opcional />
@@ -117,7 +117,7 @@ export function EditarUsuarioAdmin({ usuario, onGuardado }: Props) {
         error={errores.rol}
         opciones={opcionesRol}
         deshabilitado={esUnoMismo}
-        ayuda={esUnoMismo ? 'No podés cambiar tu propio rol.' : undefined}
+        ayuda={esUnoMismo ? 'No puedes cambiar tu propio rol.' : undefined}
       />
       <button type="submit" className="boton" disabled={enviando}>
         {enviando ? 'Guardando…' : 'Guardar cambios'}

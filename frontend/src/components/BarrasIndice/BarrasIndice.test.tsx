@@ -15,8 +15,8 @@ test('tiene un título que describe el gráfico', () => {
 test('escribe el valor de cada barra, sin depender del color', () => {
   render(<BarrasIndice titulo="Índice por edad" filas={filas} />);
 
-  expect(screen.getByRole('listitem', { name: '18-25: 3,50 de 5, 4 encuestas' })).toBeInTheDocument();
-  expect(screen.getByText('3,50')).toBeInTheDocument();
+  expect(screen.getByRole('listitem', { name: '18-25: 3.50 de 5, 4 encuestas' })).toBeInTheDocument();
+  expect(screen.getByText('3.50')).toBeInTheDocument();
 });
 
 test('el largo de la barra es proporcional a la escala de 1 a 5', () => {

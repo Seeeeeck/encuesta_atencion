@@ -74,6 +74,8 @@
 - Uso de principios SOLID
 - Almacenar logs de errores de backend en `storage/logs/` (estándar de Laravel)
 - Validar cada solicitud en React Y Laravel
+- Textos del frontend en español latino neutro con tuteo ("Ingresa", "tienes"), no voseo
+  rioplatense; números con formato `es-419` (punto decimal: 2.97)
 - Los test del frontend deben estar en cada componente 
   ejemplo: components/FormularioEncuesta/FormularioEncuesta.tsx 
            components/FormularioEncuesta/FormularioEncuesta.test.tsx

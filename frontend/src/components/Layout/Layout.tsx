@@ -69,7 +69,7 @@ export function Layout() {
       )}
       {usuario && !usuario.is_verified && (
         <p className="layout__aviso">
-          Te mandamos un correo para verificar tu cuenta. Abrí el link que llegó a {usuario.correo}.
+          Te enviamos un correo para verificar tu cuenta. Abre el link que llegó a {usuario.correo}.
         </p>
       )}
       <main className="layout__contenido">

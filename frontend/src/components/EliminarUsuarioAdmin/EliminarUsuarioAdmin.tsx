@@ -17,7 +17,7 @@ export function EliminarUsuarioAdmin({ usuario }: { usuario: Usuario }) {
     return (
       <div className="formulario">
         <h2>Eliminar usuario</h2>
-        <p>Para eliminar tu propia cuenta usá tu perfil.</p>
+        <p>Para eliminar tu propia cuenta usa tu perfil.</p>
       </div>
     );
   }
