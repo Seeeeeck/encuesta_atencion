@@ -1,0 +1,65 @@
+.barras-indice {
+  margin: 0;
+}
+
+.barras-indice__titulo {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.barras-indice__nota {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.barras-indice__lista {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.barras-indice__fila {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, 9rem) 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.barras-indice__etiqueta {
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.barras-indice__pista {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 1.25rem;
+  border-left: 1px solid var(--borde);
+}
+
+.barras-indice__barra {
+  height: 1rem;
+  border-radius: 0 4px 4px 0;
+  background: var(--primario);
+  transition: filter 0.15s ease;
+}
+
+.barras-indice__fila:hover .barras-indice__barra {
+  filter: brightness(1.12);
+}
+
+.barras-indice__valor {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.barras-indice__detalle {
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+  white-space: nowrap;
+}

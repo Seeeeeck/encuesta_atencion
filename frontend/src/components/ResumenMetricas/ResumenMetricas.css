@@ -1,0 +1,26 @@
+.resumen-metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 1rem;
+}
+
+.indicador p {
+  margin: 0;
+}
+
+.indicador__titulo {
+  font-size: 0.9rem;
+  color: var(--texto-suave);
+}
+
+.indicador__valor {
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.indicador__detalle {
+  font-size: 0.9rem;
+  color: var(--texto-suave);
+}

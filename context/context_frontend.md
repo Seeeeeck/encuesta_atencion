@@ -140,6 +140,44 @@
     enviar incompleta (aviso de faltantes) → teclado (flechas) → completar → enviar → pantalla
     final → `/encuesta` redirige a la final. En la BD quedó 1 encuesta `is_ok = true` con las 10
     respuestas elegidas. Usuario de prueba borrado (0 `@test.local`).
+- **Fase 09 (frontend admin) — rama `frontend-admin`**:
+  - Rutas bajo `RutaAdmin` + `AdminLayout` (pestañas "Métricas"/"Usuarios", `aria-current`):
+    `/admin` (métricas), `/admin/usuarios` (lista, `?pagina=N`), `/admin/usuarios/:id` (detalle).
+  - **Métricas** (`AdminMetricas`), diseñadas con la skill `dataviz`:
+    - `ResumenMetricas`: fila de indicadores (usuarios, encuestas completadas con % sobre usuarios,
+      índice de atención /5), sin gráfico.
+    - `BarrasIndice`: barras horizontales de un solo tono (`--primario`) en escala 1–5, valor escrito
+      en la punta de cada barra, filas sin datos dicen "Sin datos". Se usa para índice por pregunta
+      (`promedio_ajustado`), por edad y por sexo (con nombres legibles).
+    - `DistribucionRespuestas`: **barra apilada divergente centrada en el neutro (3)** (Likert),
+      leyenda con texto, tooltip por segmento con hover y foco de teclado (`data-tooltip`), y vista
+      "Ver como tabla". Paleta divergente terracota ↔ azul petróleo con gris en el medio, validada con
+      `validate_palette.js` de la skill en claro (sobre `#ffffff`) y oscuro (sobre `#232d2b`):
+      claro `#a84d27 #e08e5a #c9c7c2 #4db4cc #00739c`, oscuro `#d17746 #964b2c #5a5955 #006d95
+      #29a1c1`. La paleta salvia original no alcanzaba el piso de croma ni la separación entre tonos
+      vecinos; los tonos claros quedan con contraste < 3:1, compensado con leyenda + tabla.
+    - `utils/formato.ts`: números con coma decimal (`es-AR`), porcentajes y plurales.
+  - **Usuarios** (`AdminUsuarios`): tabla paginada (la página va en la URL), link "Ver" con
+    `aria-label` que pasa el usuario en el `state` de la navegación. **Sin búsqueda**: la API no la
+    soporta y filtrar solo la página actual sería engañoso.
+  - **Detalle** (`AdminUsuario`): la API no tiene `GET /admin/usuarios/{id}`, así que los datos llegan
+    por `state` (el navegador lo conserva al recargar); si faltan o no coinciden con el id de la URL,
+    pide abrirlo desde la lista. Tres componentes:
+    - `RespuestasUsuario`: cruza `GET /encuesta/obtener/preguntas` con las respuestas; el 404 "aún
+      no realiza la encuesta" se muestra como aviso, no como error.
+    - `EditarUsuarioAdmin`: manda solo los campos que cambiaron (el backend actualiza solo los que
+      llegan); clave solo si se escribe una nueva; edad/sexo vacíos no se mandan (el backend no
+      permite borrarlos); "No hay cambios para guardar." sin llamar a la API; un admin no puede
+      cambiarse su propio rol; si se edita a sí mismo actualiza la sesión.
+    - `EliminarUsuarioAdmin`: confirmación en pantalla; un admin no puede eliminarse desde el panel.
+  - `CampoFormulario` ahora acepta `deshabilitado`. `utils/opciones.ts` suma `opcionesRol` y
+    `significadoRespuesta` (compartido con la distribución).
+  - `Layout`: vuelve arriba (`window.scrollTo(0, 0)`) en cada cambio de ruta — `BrowserRouter` no
+    restaura el scroll (detectado en Chrome).
+  - Verificado: **246 tests en verde**, `tsc`, `oxlint` y build limpios (JS 104 kB gzip). En Chrome
+    contra la API real con un admin temporal `@test.local`: métricas (barras, distribución divergente,
+    tooltip con teclado, tabla), lista paginada, detalle con respuestas, edición parcial (solo edad y
+    rol) verificada en la BD, eliminación, scroll al cambiar de ruta. Usuarios de prueba borrados.
 - **Comandos de desarrollo** documentados en la raíz `CLAUDE.md` (sección Comandos):
   `npm install`, `npm run dev`, `npm run build`, `npm run lint`.
 

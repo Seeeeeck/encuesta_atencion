@@ -18,6 +18,7 @@ interface Props {
   autoComplete?: string;
   opciones?: Opcion[];
   opcional?: boolean;
+  deshabilitado?: boolean;
 }
 
 export function CampoFormulario({
@@ -31,6 +32,7 @@ export function CampoFormulario({
   autoComplete,
   opciones,
   opcional = false,
+  deshabilitado = false,
 }: Props) {
   const id = useId();
   const idAyuda = `${id}-ayuda`;
@@ -42,6 +44,7 @@ export function CampoFormulario({
     value: valor,
     'aria-invalid': Boolean(error),
     'aria-describedby': descripcion || undefined,
+    disabled: deshabilitado,
     className: 'campo__control',
   };
 

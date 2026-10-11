@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../../context/useAuth';
 import { cerrarSesion as cerrarSesionApi } from '../../services/authService';
 import { apiDisponible } from '../../services/saludService';
@@ -9,6 +9,12 @@ export function Layout() {
   const { usuario, esAdmin, cerrarSesion } = useAuth();
   const navegar = useNavigate();
   const [sinServidor, setSinServidor] = useState(false);
+  const { pathname } = useLocation();
+
+  // BrowserRouter no restaura el scroll: cada página nueva arranca desde arriba.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
   useEffect(() => {
     let activo = true;
