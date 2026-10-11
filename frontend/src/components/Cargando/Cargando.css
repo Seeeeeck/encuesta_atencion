@@ -1,0 +1,27 @@
+.cargando {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--texto-suave);
+}
+
+.cargando__punto {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--primario);
+  animation: respirar 1.4s ease-in-out infinite;
+}
+
+@keyframes respirar {
+  50% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cargando__punto {
+    animation: none;
+  }
+}

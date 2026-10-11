@@ -53,7 +53,7 @@
 - `npm run dev` — levantar el servidor de desarrollo de Vite (http://localhost:5173)
 - `npm run build` — compilar build de producción
 - `npm run lint` — correr el linter (oxlint)
-- `npm test` — pendiente: se documentará al configurar Jest + React Testing Library (fase 06/07)
+- `npm test` — correr los tests de Jest + React Testing Library
 
 ## Estructura del proyecto
 
@@ -109,7 +109,7 @@
 - `03-auth-backend.md` (listo)
 - `04-encuesta-backend.md` (listo)
 - `05-admin-backend.md` (listo)
-- `06-frontend-base.md`
+- `06-frontend-base.md` (listo)
 - `07-frontend-auth.md`
 - `08-frontend-encuesta.md`
 - `09-frontend-admin.md`

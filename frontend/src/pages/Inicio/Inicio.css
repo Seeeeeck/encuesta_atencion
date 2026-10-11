@@ -1,0 +1,32 @@
+.inicio {
+  max-width: 40rem;
+  margin: clamp(1rem, 6vh, 4rem) auto 0;
+}
+
+.inicio__bajada {
+  font-size: 1.1rem;
+  color: var(--texto-suave);
+}
+
+.inicio__datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0;
+  margin: 1.5rem 0;
+  list-style: none;
+}
+
+.inicio__datos li {
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  background: var(--primario-suave);
+  color: var(--primario-oscuro);
+  font-size: 0.9rem;
+}
+
+.inicio__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
