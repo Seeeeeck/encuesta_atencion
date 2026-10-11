@@ -1,0 +1,8 @@
+.mensaje-error {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radio);
+  border-left: 4px solid var(--error);
+  background: var(--error-suave);
+  color: var(--error);
+}

@@ -5,13 +5,13 @@ SPA React+TS lista: routing, capa de servicios HTTP (axios) en `src/services`, l
 una paleta de colores que relaje la vista (requisito no funcional).
 
 ## Pasos
-1. Configurar **React Router** con rutas públicas y privadas (guard por sesión/token).
+1. Configurar **React Router** con rutas públicas y privadas (guard por sesión/token). (listo)
 2. Crear `src/services/apiClient.ts` (axios con baseURL desde `.env`, interceptor que adjunta el
-   token Sanctum y maneja `401` → cerrar sesión).
-3. Servicios por dominio: `src/services/authService.ts`, `encuestaService.ts`, `adminService.ts`.
-4. **Layout** base (`src/components/Layout/`) + tema (colores suaves/relajantes, buen contraste).
-5. Estado de sesión: contexto/almacenamiento del token y del usuario actual.
-6. Manejo de errores y carga (componentes de feedback reutilizables en `src/components/`).
+   token Sanctum y maneja `401` → cerrar sesión). (listo)
+3. Servicios por dominio: `src/services/authService.ts`, `encuestaService.ts`, `adminService.ts`. (listo)
+4. **Layout** base (`src/components/Layout/`) + tema (colores suaves/relajantes, buen contraste). (listo)
+5. Estado de sesión: contexto/almacenamiento del token y del usuario actual. (listo)
+6. Manejo de errores y carga (componentes de feedback reutilizables en `src/components/`). (listo)
 
 ## Archivos a tocar
 - `frontend/src/main.tsx`, `frontend/src/App.tsx`, `frontend/src/routes/*`.
