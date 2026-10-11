@@ -149,7 +149,12 @@
     - Suite completa verificada: `php artisan test` → 10 tests, 13 assertions, todos en verde.
   - **Fase 02 completa**: migraciones, modelos, seeders y tests, verificados contra Postgres
     real (dev y test).
-- **Fase 03 (auth backend) en progreso** — trabajando en rama `auth-backend`. Paso 1 de
+- **Fase 03 (auth backend) completa (`listo`)** — cerrada en la rama `docs/cierre-fase-03`
+  (2026-10-11): los 5 pasos de `plan/03-auth-backend.md` marcados, y el plan corregido con las
+  rutas reales (`/me/actualizar/...`, `DELETE /me/eliminar/usuario`, cambio de correo bajo
+  `signed`) y las ubicaciones reales de los tests (`tests/Feature/Api/{register,login,logout,
+  perfil,correo}/Test.php`). El historial de abajo es cómo se construyó. Trabajada en rama
+  `auth-backend`. Paso 1 de
   `plan/03-auth-backend.md`:
   - `app/Http/Controllers/Api/AuthController.php` creado con `register()`, `login()` y
     `logout()` como **esqueletos** (solo `TODO`, sin lógica todavía — modo tutor, el usuario
@@ -260,7 +265,7 @@
     - Se evaluó crear `LogoutRequest` (Form Request vacío, sin campos que validar ya que
       `/logout` no recibe body). Se descartó: `AuthController::logout()` sigue tipando
       `Request $request` genérico, sin Form Request dedicado.
-- **Fase 03, paso 2 (`PerfilController`) — en progreso**:
+- **Fase 03, paso 2 (`PerfilController`) — completo**:
   - `app/Http/Controllers/Api/PerfilController.php` creado con `show()`, `destroy()` y,
     **decisión del usuario**, la edición del perfil se dividió en **3 métodos separados** en vez
     de un único `update()`: `updateName()`, `updatePassword()`, `updateEmail()` — uno por campo,
@@ -347,7 +352,7 @@
     - También se agregó `POST /destroy/user` → `destroy` dentro del grupo `auth:sanctum` (alias del
       `DELETE /me`, para pruebas).
     - **Eliminadas** en la rama `admin` (Fase 05), antes de mergear a `main`.
-  - Falta cerrar el paso 2: considerar tests de Feature para estos 5 endpoints.
+  - Tests de Feature de estos endpoints: en `tests/Feature/Api/perfil/Test.php` y `correo/Test.php`.
   - **Tests reestructurados**: los tests de Feature en `tests/Feature/Api/` pasaron a subcarpetas
     por endpoint: `login/Test.php` (`Tests\Feature\Api\Login\Test`) y `register/Test.php`
     (`Tests\Feature\Api\Register\Test`).
@@ -844,9 +849,9 @@ Relaciones: Usuario 1—N Encuesta; Encuesta 1—N Respuesta; Pregunta 1—N Res
 
 ## Endpoints actuales (ver `plan/03`, `plan/04`, `plan/05`)
 - Auth (públicos): `POST /register`, `POST /login`.
-- Auth (auth:sanctum): `POST /logout`, `GET /me`, `DELETE /me`,
+- Auth (auth:sanctum): `POST /logout`, `GET /me`, `DELETE /me/eliminar/usuario`,
   `PUT /me/actualizar/nombre`, `PUT /me/actualizar/clave`,
-  `GET /me/actualizar/correo/verificacion`, `POST /eliminar/usuario`.
+  `GET /me/actualizar/correo/verificacion`.
 - Encuesta (auth:sanctum): `GET /encuesta/obtener/preguntas`, `POST /encuesta/enviar`.
 - Auth (signed): `GET /email/verificar/{id}/{hash}` (name: `verification.verify`),
   `GET /me/actualizar/correo/verificacion/firma` (name: `verification.verify.sign`),
