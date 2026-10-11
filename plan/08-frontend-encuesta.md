@@ -5,16 +5,21 @@ Flujo de respuesta de la encuesta: iniciar, navegar entre preguntas (ida y vuelt
 respuestas), enviar y ver el estado de finalización.
 
 ## Pasos
-1. Página `src/pages/Encuesta/` que carga preguntas (`GET /api/preguntas`) y la encuesta del usuario
-   (`GET /api/encuesta`) para reanudar.
+> Ajustado a la API real (decisión 2026-10-11): el borrador vive en el navegador (`localStorage`) y
+> las respuestas se mandan todas juntas al final; no existen `PUT /encuesta/respuestas/{id}` ni
+> `GET /encuesta/compartir`.
+
+1. Página `src/pages/Encuesta/` que consulta `GET /encuesta/estado` (si ya está completa va a la
+   pantalla final), carga `GET /encuesta/obtener/preguntas` y retoma el borrador local. (listo)
 2. Componente de navegación pregunta-a-pregunta: avanzar, **retroceder** y editar respuestas previas.
-   La respuesta se captura como **escala 1–5** (radios o botones) con **anclas de texto en los extremos**
-   (ej. 1 = "Nunca" … 5 = "Siempre"); las anclas son solo display, en BD se guarda el número. Validación
-   en cliente: entero 1–5, requerido, coherente con el backend. *(Confirmar el texto de las anclas.)*
-3. Guardado de cada respuesta (`PUT /api/encuesta/respuestas/{idPregunta}`) — autosave o por paso.
-4. Indicador de progreso (respondidas/total) usando `GET /api/encuesta/estado`.
-5. Enviar (`POST /api/encuesta/enviar`): bloquear si está incompleta y mostrar qué falta.
-6. Pantalla de "encuesta finalizada" + opción de **compartir link** (`GET /api/encuesta/compartir`).
+   Escala 1–5 con anclas "Totalmente en desacuerdo" / "Totalmente de acuerdo" (de
+   `docs/preguntas.json`); en BD se guarda el número. (listo)
+3. Guardado de cada respuesta en el borrador local (`localStorage`) en cada cambio. (listo)
+4. Indicador de progreso (respondidas/total). (listo)
+5. Enviar (`POST /encuesta/enviar`): bloquear si está incompleta y mostrar qué falta; 409 = ya
+   enviada. (listo)
+6. Pantalla de "encuesta finalizada" (`/encuesta/finalizada`) + **compartir link** del frontend
+   (`navigator.share` o copiar al portapapeles). (listo)
 
 ## Archivos a tocar
 - `frontend/src/pages/Encuesta/*`.

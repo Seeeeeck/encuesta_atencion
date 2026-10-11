@@ -70,3 +70,18 @@ test('al ingresar desde una página privada vuelve a esa página', async () => {
 
   expect(await screen.findByRole('heading', { level: 1, name: 'Mi perfil' })).toBeInTheDocument();
 });
+
+test('/encuesta sin sesión manda al login', async () => {
+  renderConRutas(<AppRutas />, '/encuesta');
+
+  expect(await screen.findByRole('heading', { level: 1, name: 'Ingresar' })).toBeInTheDocument();
+});
+
+test('/encuesta/finalizada con sesión consulta el estado', async () => {
+  guardarSesion('tok', usuarioDePrueba);
+  servidorFalso({ data: { status: 'ok', completada: true } });
+
+  renderConRutas(<AppRutas />, '/encuesta/finalizada');
+
+  expect(await screen.findByRole('heading', { name: '¡Gracias por responder!' })).toBeInTheDocument();
+});
