@@ -205,6 +205,9 @@ class Test extends TestCase
             'id_no_existe'   => ['id', 999999, 'id'],      // exists:usuario,id
             'nombre_corto'        => ['nombre', 'ab', 'nombre'],                 // min:3
             'nombre_largo'        => ['nombre', str_repeat('a', 101), 'nombre'], // max:100
+            'correo_invalido'     => ['correo', 'no-es-un-correo', 'correo'],    // email
+            'correo_largo'        => ['correo', str_repeat('a', 140) . '@test.local', 'correo'], // max:150
+            'correo_de_otro'      => ['correo', 'juan@example.com', 'correo'],   // unique (es el del admin)
             'clave_corta'         => ['clave', 'Ab1!', 'clave'],                 // min:5
             'clave_sin_mayuscula' => ['clave', 'abcde!', 'clave'],               // regex mayúscula
             'clave_sin_simbolo'   => ['clave', 'Abcdef', 'clave'],
@@ -242,6 +245,10 @@ class Test extends TestCase
             // nombre: min:3, max:100
             'nombre_min'       => ['nombre', 'Ana', 'nombre'],
             'nombre_max'       => ['nombre', str_repeat('a', 100), 'nombre'],
+
+            // correo: email, unique ignorando al propio usuario
+            'correo_nuevo'     => ['correo', 'nuevo@example.com', 'correo'],
+            'correo_propio'    => ['correo', 'juan@example2.com', 'correo'],
 
             // clave: min:5, max:100, mayúscula + símbolo
             'clave_min'        => ['clave', 'Ab1!c', 'clave'],

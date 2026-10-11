@@ -82,6 +82,10 @@ class AdminController extends Controller
                 $usuario->nombre = $request->nombre;
             }
 
+            if ($request->filled("correo")) {
+                $usuario->correo = $request->correo;
+            }
+
             if ($request->filled("clave")) {
                 $usuario->clave = $request->clave;
             }

@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Override;
 
 class EditarUsuarioRequest extends FormRequest
@@ -26,11 +27,13 @@ class EditarUsuarioRequest extends FormRequest
         return [
             'id' => "required|numeric|exists:usuario,id",
             'nombre' => 'min:3|max:100|string',
+            //único, pero sin contar al propio usuario que se está editando
+            'correo' => ['email', 'max:150', Rule::unique('usuario', 'correo')->ignore($this->id)],
             'clave' => ['string', 'min:5', 'max:100', 'regex:/[A-Z]/', 'regex:/[\W_]/'],
             'edad' => ['nullable', 'integer', 'min:1', 'max:200'],
             'sexo' => ['nullable', 'in:M,F,N/R',"string"],
             'rol' => 'in:admin,usuario|string',
-            'regla' => 'required_without_all:nombre,edad,sexo,rol,clave'
+            'regla' => 'required_without_all:nombre,correo,edad,sexo,rol,clave'
         ];
     }
 
@@ -43,6 +46,9 @@ class EditarUsuarioRequest extends FormRequest
             'nombre.min' => 'El nombre debe tener al menos 3 caracteres.',
             'nombre.max' => 'El nombre no puede superar los 100 caracteres.',
             'nombre.string' => 'El nombre debe ser una cadena de texto',
+            'correo.email' => 'El correo debe tener un formato válido.',
+            'correo.max' => 'El correo no puede superar los 150 caracteres.',
+            'correo.unique' => 'Ya existe otra cuenta registrada con este correo.',
             'clave.string' => "La clave debe ser una cadena de texto",
             'clave.min' => 'La clave debe tener al menos 5 caracteres.',
             'clave.max' => 'La clave no puede superar los 100 caracteres.',
@@ -54,7 +60,7 @@ class EditarUsuarioRequest extends FormRequest
             'sexo.string'=>"El sexo debe ser una cadena de texto",
             'rol.in' => 'El usuario debe ser de tipo admin o usuario',
             'rol.string' => 'El rol debe ser una cadena de texto',
-            'regla.required_without_all' => "Debe al menos estar nombre,edad,rol o clave"
+            'regla.required_without_all' => "Debe venir al menos nombre, correo, edad, sexo, rol o clave"
         ];
     }
 }
