@@ -103,6 +103,7 @@ class Test extends TestCase
     public function test_obtener_preguntas(): void
     {
         $preguntas = $this->listarPreguntas();
+        Pregunta::truncate();
         $this->seed(\Database\Seeders\PreguntaSeeder::class);
         $response = $this->postJson("/api/register", $this->obtenerUsuario());
         $response->assertStatus(201);

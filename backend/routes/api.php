@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EncuestaController;
+use App\Http\Controllers\Api\MetricasController;
 use App\Http\Controllers\Api\PerfilController;
 use Illuminate\Support\Facades\Route;
 
@@ -48,8 +49,5 @@ Route::middleware(['auth:sanctum', 'es_admin','throttle:60,1'])
         Route::get('/admin/usuarios/{id}/respuestas',[AdminController::class,'obtenerUsuarioRespuestas']);
         Route::put("/admin/usuario/editar",[AdminController::class,'editarUsuario']);
         Route::delete("/admin/usuario/eliminar",[AdminController::class,'eliminarUsuario']);
+        Route::get("/admin/metricas", [MetricasController::class, "obtenerMetricas"]);
     });
-
-//TEST
-Route::get("user/email", [PerfilController::class, "showUserByEmail"]);
-Route::post("user/destroy", [PerfilController::class, "deleteUserByEmail"]);
