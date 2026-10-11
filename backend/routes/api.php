@@ -32,6 +32,7 @@ Route::middleware(['auth:sanctum', 'throttle:60,1'])
         //Manipulacion de encuesta
         Route::get("/encuesta/obtener/preguntas", [EncuestaController::class, 'obtenerPreguntas']);
         Route::post("/encuesta/enviar", [EncuestaController::class, 'enviarEncuesta']);
+        Route::get("/encuesta/estado", [EncuestaController::class, 'estado']);
     });
 
 //Api de firmas
