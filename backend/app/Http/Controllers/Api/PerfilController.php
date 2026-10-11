@@ -41,7 +41,7 @@ class PerfilController extends Controller
             $usuario = $request->user();
             $usuario->update($request->validated());
 
-            return response()->json(["message" => "Se cambió el nombre", $usuario], 200);
+            return response()->json(["message" => "Se cambió el nombre", "usuario" => $usuario], 200);
         } catch (\Throwable $e) {
             Log::error('Error al actualizar nombre', [
                 'controlador' => self::class,
@@ -71,7 +71,7 @@ class PerfilController extends Controller
 
             $usuario->save();
 
-            return response()->json(["message" => "Se cambió la clave", $usuario], 200);
+            return response()->json(["message" => "Se cambió la clave", "usuario" => $usuario], 200);
         } catch (\Throwable $e) {
             Log::error('Error al actualizar clave', [
                 'controlador' => self::class,
@@ -90,10 +90,21 @@ class PerfilController extends Controller
     public function updateEmail(UpdateCorreoRequest $request)
     {
         try {
-            $usuario=Usuario::where('id',$request->id)->first();
+            $usuario = Usuario::where('id', $request->id)->first();
+
+            if (!$usuario) {
+                return response()->json(["message" => "No existe el usuario"], 404);
+            }
+
+            //El hash se generó con el correo de ese momento: si el correo ya cambió,
+            //el link deja de servir (evita reusar el mismo link firmado)
+            if (!hash_equals(sha1($usuario->getEmailForVerification()), (string) $request->hash)) {
+                return response()->json(["message" => "El link de cambio de correo ya no es válido"], 403);
+            }
+
             $usuario->update($request->validated());
 
-            return response()->json(["message" => "Se cambió el correo", $usuario], 200);
+            return response()->json(["message" => "Se cambió el correo", "usuario" => $usuario], 200);
         } catch (\Throwable $e) {
             Log::error('Error al actualizar correo', [
                 'controlador' => self::class,
@@ -154,52 +165,6 @@ class PerfilController extends Controller
             ]);
 
             return response()->json(['message' => 'Err:Ocurrió un error al eliminar la cuenta.'], 500);
-        }
-    }
-
-
-    public function showUserByEmail(Request $request)
-    {
-        try {
-            $usuario = Usuario::where("correo", $request->email)->first();
-            if (!$usuario) {
-                return response()->json(["message" => "No existe el usuario con el correo" . " " . $request->email], 404);
-            }
-            return response()->json(["message" => "usuario obtenido", $usuario], 200);
-        } catch (\Throwable $e) {
-            Log::error('Error al obtener usuario por email', [
-                'controlador' => self::class,
-                'metodo' => __FUNCTION__,
-                'fecha_hora' => now()->toDateTimeString(),
-                'mensaje' => $e->getMessage(),
-            ]);
-
-            return response()->json(['message' => 'Err:Ocurrió un error al obtener el usuario.'], 500);
-        }
-    }
-
-    public function deleteUserByEmail(Request $request)
-    {
-        try {
-
-            $usuario_borrado = Usuario::where("correo", $request->email)->delete();
-            if (!$usuario_borrado) {
-                return response()->json([
-                    "message" => "El usuario no fue borrado porque no existe con ese correo",
-                    "correo" => $request->email
-                ], 404);
-            }
-            return response()->json(["message" => "Usuario eliminado"], 200);
-        } catch (\Throwable $e) {
-
-            Log::error('Error al eliminar usuario por email', [
-                'controlador' => self::class,
-                'metodo' => __FUNCTION__,
-                'fecha_hora' => now()->toDateTimeString(),
-                'mensaje' => $e->getMessage(),
-            ]);
-
-            return response()->json(['message' => 'Err:Ocurrió un error al eliminar el usuario por email.'], 500);
         }
     }
 }
