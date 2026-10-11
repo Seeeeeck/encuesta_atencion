@@ -85,3 +85,59 @@ test('/encuesta/finalizada con sesión consulta el estado', async () => {
 
   expect(await screen.findByRole('heading', { name: '¡Gracias por responder!' })).toBeInTheDocument();
 });
+
+test('/admin con un usuario normal vuelve a la encuesta', async () => {
+  guardarSesion('tok', usuarioDePrueba);
+  servidorFalso([{ data: { status: 'ok' } }, { data: { completada: false } }, { data: { preguntas: [] } }]);
+
+  renderConRutas(<AppRutas />, '/admin');
+
+  expect(await screen.findByText('Cargando la encuesta…')).toBeInTheDocument();
+});
+
+test('/admin con un admin muestra las métricas dentro del panel', async () => {
+  guardarSesion('tok', { ...usuarioDePrueba, rol: 'admin' });
+  servidorFalso({
+    data: {
+      status: 'ok',
+      metricas: {
+        resumen: { total_usuarios: 0, total_encuestas: 0, encuestas_completadas: 0, indice_atencion_general: null },
+        por_pregunta: [],
+        por_edad: [],
+        por_sexo: [],
+      },
+    },
+  });
+
+  renderConRutas(<AppRutas />, '/admin');
+
+  expect(await screen.findByRole('navigation', { name: 'Panel de administración' })).toBeInTheDocument();
+  expect(await screen.findByRole('group', { name: 'Usuarios' })).toBeInTheDocument();
+});
+
+test('/admin/usuarios con un admin muestra la lista', async () => {
+  guardarSesion('tok', { ...usuarioDePrueba, rol: 'admin' });
+  servidorFalso({ data: { status: 'ok', usuarios: { current_page: 1, last_page: 1, per_page: 10, total: 0, data: [] } } });
+
+  renderConRutas(<AppRutas />, '/admin/usuarios');
+
+  expect(await screen.findByRole('heading', { level: 1, name: 'Usuarios' })).toBeInTheDocument();
+});
+
+test('un admin que ingresa desde /login va al panel', async () => {
+  const admin = { ...usuarioDePrueba, rol: 'admin' as const };
+  const metricas = {
+    resumen: { total_usuarios: 0, total_encuestas: 0, encuestas_completadas: 0, indice_atencion_general: null },
+    por_pregunta: [],
+    por_edad: [],
+    por_sexo: [],
+  };
+  servidorFalso([{ data: { status: 'ok' } }, { data: { token: 'tok', usuario: admin } }, { data: { metricas } }]);
+  renderConRutas(<AppRutas />, '/login');
+
+  await userEvent.type(await screen.findByLabelText('Correo'), 'admin@test.local');
+  await userEvent.type(screen.getByLabelText('Clave'), 'Clave!');
+  await userEvent.click(screen.getByRole('button', { name: 'Ingresar' }));
+
+  expect(await screen.findByRole('navigation', { name: 'Panel de administración' })).toBeInTheDocument();
+});

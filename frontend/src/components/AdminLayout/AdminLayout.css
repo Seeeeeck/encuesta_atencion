@@ -1,0 +1,23 @@
+.admin {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.admin__pestanas {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.admin__pestanas a {
+  padding: 0.5rem 0.9rem;
+  border-bottom: 2px solid transparent;
+  color: var(--texto-suave);
+  text-decoration: none;
+}
+
+.admin__pestanas a:hover,
+.admin__pestanas a.active {
+  color: var(--primario-oscuro);
+  border-bottom-color: var(--primario);
+}

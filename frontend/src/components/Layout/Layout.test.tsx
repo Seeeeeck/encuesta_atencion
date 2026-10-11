@@ -110,3 +110,16 @@ test('con el correo verificado no muestra el aviso', () => {
 
   expect(screen.queryByText(/te mandamos un correo para verificar tu cuenta/i)).not.toBeInTheDocument();
 });
+
+test('al cambiar de página vuelve arriba', async () => {
+  // jsdom no implementa scrollTo: se reemplaza para ver si se llama.
+  const scrollTo = jest.fn();
+  window.scrollTo = scrollTo as unknown as typeof window.scrollTo;
+  renderLayout();
+  scrollTo.mockClear();
+
+  await userEvent.click(screen.getByRole('link', { name: 'Ingresar' }));
+
+  expect(await screen.findByText('pantalla login')).toBeInTheDocument();
+  expect(scrollTo).toHaveBeenCalledWith(0, 0);
+});

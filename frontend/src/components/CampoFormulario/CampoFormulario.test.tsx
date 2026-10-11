@@ -61,3 +61,9 @@ test('con opciones se muestra como una lista desplegable', async () => {
 
   expect(screen.getByText('valor: F')).toBeInTheDocument();
 });
+
+test('se puede deshabilitar', () => {
+  render(<CampoFormulario etiqueta="Rol" nombre="rol" valor="" onCambio={() => {}} deshabilitado />);
+
+  expect(screen.getByLabelText('Rol')).toBeDisabled();
+});

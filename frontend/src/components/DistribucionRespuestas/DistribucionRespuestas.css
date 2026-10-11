@@ -1,0 +1,145 @@
+/* Escala divergente validada con el validador de la skill dataviz (claro y oscuro):
+   terracota = desacuerdo, gris = neutral, azul petróleo = acuerdo. */
+.distribucion {
+  --escala-1: #a84d27;
+  --escala-2: #e08e5a;
+  --escala-3: #c9c7c2;
+  --escala-4: #4db4cc;
+  --escala-5: #00739c;
+
+  margin: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .distribucion {
+    --escala-1: #d17746;
+    --escala-2: #964b2c;
+    --escala-3: #5a5955;
+    --escala-4: #006d95;
+    --escala-5: #29a1c1;
+  }
+}
+
+.distribucion__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin: 0.75rem 0 1rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.distribucion__leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.distribucion__muestra {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 3px;
+}
+
+.distribucion__preguntas {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.distribucion__texto {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+.distribucion__total,
+.distribucion__vacia {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+
+.distribucion__vacia {
+  margin: 0;
+}
+
+.distribucion__pista {
+  position: relative;
+  height: 1.25rem;
+}
+
+.distribucion__centro {
+  position: absolute;
+  left: 50%;
+  top: -0.2rem;
+  bottom: -0.2rem;
+  border-left: 1px dashed var(--texto-suave);
+}
+
+.distribucion__barra {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  width: 100%;
+}
+
+.distribucion__segmento {
+  position: relative;
+  height: 100%;
+  border-right: 2px solid var(--superficie);
+}
+
+.distribucion__segmento:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.distribucion__segmento:last-child {
+  border-right: none;
+  border-radius: 0 4px 4px 0;
+}
+
+.distribucion__segmento:only-child {
+  border-radius: 4px;
+}
+
+.distribucion__segmento--1 { background: var(--escala-1); }
+.distribucion__segmento--2 { background: var(--escala-2); }
+.distribucion__segmento--3 { background: var(--escala-3); }
+.distribucion__segmento--4 { background: var(--escala-4); }
+.distribucion__segmento--5 { background: var(--escala-5); }
+
+.distribucion__segmento:hover,
+.distribucion__segmento:focus-visible {
+  filter: brightness(1.1);
+}
+
+.distribucion__segmento:hover::after,
+.distribucion__segmento:focus-visible::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 0.4rem);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  box-shadow: var(--sombra);
+  pointer-events: none;
+}
+
+.distribucion__tabla {
+  margin-top: 1.25rem;
+}
+
+.distribucion__tabla summary {
+  cursor: pointer;
+  color: var(--primario-oscuro);
+}

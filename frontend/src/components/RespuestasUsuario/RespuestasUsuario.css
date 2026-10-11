@@ -1,0 +1,42 @@
+.respuestas-usuario {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.respuestas-usuario__fila {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr auto;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--borde);
+  font-size: 0.9rem;
+}
+
+.respuestas-usuario__numero {
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+
+.respuestas-usuario__valor {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.respuestas-usuario__aviso {
+  margin: 0;
+  color: var(--texto-suave);
+}
+
+@media (max-width: 36rem) {
+  .respuestas-usuario__fila {
+    grid-template-columns: 2.5rem 1fr;
+  }
+
+  .respuestas-usuario__valor {
+    grid-column: 2;
+  }
+}
