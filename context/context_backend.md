@@ -767,6 +767,22 @@
     `deleteUserByEmail()` de `PerfilController`. Ya no existe la ruta pública que borraba usuarios sin auth.
   - Suite completa: **91 tests, 202 assertions, en verde** (2 corridas seguidas).
   - **Fase 05 completa (`listo`)** — los 5 pasos de `plan/05` marcados.
+- **Estado de la encuesta y envío único** (rama `encuesta-estado`, 2026-10-11, lo escribió el asistente
+  con TDD como parte del plan del frontend aprobado por el usuario):
+  - `EncuestaController::estado()` → `GET /encuesta/estado` (grupo `auth:sanctum`): `{"message",
+    "completada": bool}`, `true` si el usuario tiene una `Encuesta` con `is_ok = true`. Cubre el
+    requisito "el usuario puede revisar si terminó la encuesta".
+  - `enviarEncuesta()` devuelve **409** `{"message": "La encuesta ya fue enviada."}` si el usuario ya
+    tiene una `Encuesta` (antes se podía enviar dos veces; la base de dev tiene 21 encuestas para 20
+    usuarios por eso). El chequeo es a nivel aplicación: **no** se agregó `unique` sobre
+    `encuesta.id_usuario` porque la migración fallaría con los duplicados que ya hay en dev (queda
+    una ventana de carrera con dos envíos simultáneos; se puede cerrar con la constraint si se limpian
+    los duplicados).
+  - Tests nuevos en `tests/Feature/Api/encuesta/Test.php`: estado sin encuesta (false), estado tras
+    enviar (true), estado sin token (401), segundo envío (409 y sigue habiendo 1 encuesta y 10
+    respuestas). Suite: **139 tests, 320 assertions, en verde**.
+  - Postman: 4 requests nuevas en `06 Encuesta` (mismos casos). Corrida completa con Postman CLI:
+    **251 assertions, 0 fallos**. `docs/casos_de_uso_api.md` actualizado.
 - **Logs**: se usa `storage/logs/laravel.log` (canal `single` por defecto de Laravel). No se
   creó una carpeta `/logs` aparte — el paso 5 de la Fase 00 se marcó listo así.
 - **`.gitignore`**: el que trae Laravel 11+ ya cubre `.env`, `/vendor`, `/node_modules` y todo
@@ -852,7 +868,8 @@ Relaciones: Usuario 1—N Encuesta; Encuesta 1—N Respuesta; Pregunta 1—N Res
 - Auth (auth:sanctum): `POST /logout`, `GET /me`, `DELETE /me/eliminar/usuario`,
   `PUT /me/actualizar/nombre`, `PUT /me/actualizar/clave`,
   `GET /me/actualizar/correo/verificacion`.
-- Encuesta (auth:sanctum): `GET /encuesta/obtener/preguntas`, `POST /encuesta/enviar`.
+- Encuesta (auth:sanctum): `GET /encuesta/obtener/preguntas`, `POST /encuesta/enviar` (409 si ya
+  envió), `GET /encuesta/estado` (`{ completada: bool }`).
 - Auth (signed): `GET /email/verificar/{id}/{hash}` (name: `verification.verify`),
   `GET /me/actualizar/correo/verificacion/firma` (name: `verification.verify.sign`),
   `PUT /me/actualizar/correo` (name: `update.email`).
@@ -863,9 +880,9 @@ Relaciones: Usuario 1—N Encuesta; Encuesta 1—N Respuesta; Pregunta 1—N Res
   Sanctum antes de borrar, validado por `EliminarUsuarioRequest`).
 - **Rate limiting**: middleware `throttle:60,1` aplicado a todos los grupos de rutas API
   (públicas, signed, auth:sanctum, admin). 60 requests por minuto.
-- Encuesta (pendiente): `GET /preguntas`, `POST /encuesta/iniciar`, `GET /encuesta`,
-  `PUT /encuesta/respuestas/{idPregunta}`, `POST /encuesta/enviar`, `GET /encuesta/estado`,
-  `GET /encuesta/compartir`.
+- Ya **no** se planean `POST /encuesta/iniciar`, `GET /encuesta`, `PUT /encuesta/respuestas/{id}` ni
+  `GET /encuesta/compartir`: el borrador vive en el frontend (`localStorage`) y se envía todo junto;
+  compartir es solo copiar el link del frontend.
 - Admin: `GET /admin/metricas` (`MetricasController::obtenerMetricas`).
 
 ## Decisiones

@@ -148,13 +148,17 @@ Tests: `tests/Feature/Api/encuesta/Test.php`
 | Setup: registrar usuario encuesta | `POST /register` |
 | Obtener preguntas sin token → 401 | `GET /encuesta/obtener/preguntas` |
 | Enviar encuesta sin token → 401 | `POST /encuesta/enviar` |
+| Estado sin token → 401 | `GET /encuesta/estado` |
 | Obtener preguntas → 200 | `GET /encuesta/obtener/preguntas` |
 | Enviar encuesta incompleta → 422 | `POST /encuesta/enviar` |
 | Enviar encuesta con una pregunta inexistente de más → 422 | `POST /encuesta/enviar` |
 | Enviar encuesta con respuesta fuera de rango (0) → 422 | `POST /encuesta/enviar` |
 | Enviar encuesta con respuesta fuera de rango (6) → 422 | `POST /encuesta/enviar` |
 | Enviar encuesta con una pregunta duplicada → 422 | `POST /encuesta/enviar` |
+| Estado antes de enviar → completada false | `GET /encuesta/estado` |
 | Enviar encuesta → 200 | `POST /encuesta/enviar` |
+| Estado después de enviar → completada true | `GET /encuesta/estado` |
+| Enviar encuesta otra vez → 409 | `POST /encuesta/enviar` |
 
 ## 07 Admin
 

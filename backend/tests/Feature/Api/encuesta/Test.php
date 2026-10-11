@@ -2,7 +2,9 @@
 
 namespace Tests\Feature\Api\encuesta;
 
+use App\Models\Encuesta;
 use App\Models\Pregunta;
+use App\Models\Respuesta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PhpParser\Node\Expr\Cast\Object_;
 use Tests\TestCase;
@@ -205,5 +207,53 @@ class Test extends TestCase
 
         $response = $this->postJson('/api/encuesta/enviar', ['respuestas' => $respuestas], ['Authorization' => 'Bearer ' . $token]);
         $response->assertStatus(422);
+    }
+
+    public function test_estado_sin_encuesta_enviada(): void
+    {
+        $token = $this->registrarYObtenerToken();
+
+        $response = $this->getJson('/api/encuesta/estado', ['Authorization' => 'Bearer ' . $token]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['completada' => false]);
+    }
+
+    public function test_estado_despues_de_enviar(): void
+    {
+        Pregunta::truncate();
+        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+        $token = $this->registrarYObtenerToken();
+        $this->postJson('/api/encuesta/enviar', ['respuestas' => $this->listarRespuestasEnviar()], ['Authorization' => 'Bearer ' . $token])
+            ->assertStatus(200);
+
+        $response = $this->getJson('/api/encuesta/estado', ['Authorization' => 'Bearer ' . $token]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['completada' => true]);
+    }
+
+    public function test_estado_sin_auth(): void
+    {
+        $response = $this->getJson('/api/encuesta/estado');
+
+        $response->assertStatus(401);
+    }
+
+    public function test_enviar_encuesta_dos_veces(): void
+    {
+        Pregunta::truncate();
+        $this->seed(\Database\Seeders\DatabaseSeeder::class);
+        $token = $this->registrarYObtenerToken();
+        $cabeceras = ['Authorization' => 'Bearer ' . $token];
+        $this->postJson('/api/encuesta/enviar', ['respuestas' => $this->listarRespuestasEnviar()], $cabeceras)
+            ->assertStatus(200);
+
+        $response = $this->postJson('/api/encuesta/enviar', ['respuestas' => $this->listarRespuestasEnviar()], $cabeceras);
+
+        $response->assertStatus(409);
+        $response->assertJson(['message' => 'La encuesta ya fue enviada.']);
+        $this->assertSame(1, Encuesta::count());
+        $this->assertSame(10, Respuesta::count());
     }
 }

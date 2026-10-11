@@ -40,10 +40,35 @@ class EncuestaController extends Controller
         }
     }
 
+    public function estado(Request $request)
+    {
+        try {
+            $completada = Encuesta::where('id_usuario', $request->user()->id)
+                ->where('is_ok', true)
+                ->exists();
+
+            return response()->json(["message" => "Estado de la encuesta obtenido", "completada" => $completada], 200);
+        } catch (\Throwable $e) {
+            Log::error('Error al obtener el estado de la encuesta', [
+                'controlador' => self::class,
+                'metodo' => __FUNCTION__,
+                'fecha_hora' => now()->toDateTimeString(),
+                'mensaje' => $e->getMessage(),
+            ]);
+
+            return response()->json(["message" => "Err:Error al obtener el estado de la encuesta"], 500);
+        }
+    }
+
     public function enviarEncuesta(EnviarEncuestaRequest $request)
     {
 
         try {
+            //Una sola encuesta por usuario
+            if (Encuesta::where('id_usuario', $request->user()->id)->exists()) {
+                return response()->json(["message" => "La encuesta ya fue enviada."], 409);
+            }
+
             DB::beginTransaction();
             //crear la encuesta
 
