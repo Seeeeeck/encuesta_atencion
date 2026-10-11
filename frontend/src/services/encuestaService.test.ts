@@ -1,4 +1,4 @@
-import { enviarEncuesta, obtenerPreguntas } from './encuestaService';
+import { enviarEncuesta, obtenerEstado, obtenerPreguntas } from './encuestaService';
 import { servidorFalso } from '../test/servidorFalso';
 
 const preguntas = [
@@ -28,4 +28,11 @@ test('enviarEncuesta manda las respuestas con el formato del backend', async () 
       ],
     },
   });
+});
+
+test('obtenerEstado dice si el usuario ya completó la encuesta', async () => {
+  const peticiones = servidorFalso({ data: { message: 'ok', completada: true } });
+
+  expect(await obtenerEstado()).toBe(true);
+  expect(peticiones[0]).toMatchObject({ metodo: 'GET', url: '/encuesta/estado' });
 });

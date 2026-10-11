@@ -15,3 +15,8 @@ export async function enviarEncuesta(respuestas: RespuestasPorPregunta): Promise
   }));
   await apiClient.post('/encuesta/enviar', { respuestas: cuerpo });
 }
+
+export async function obtenerEstado(): Promise<boolean> {
+  const { data } = await apiClient.get<{ completada: boolean }>('/encuesta/estado');
+  return data.completada;
+}

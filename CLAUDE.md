@@ -111,7 +111,7 @@
 - `05-admin-backend.md` (listo)
 - `06-frontend-base.md` (listo)
 - `07-frontend-auth.md` (listo)
-- `08-frontend-encuesta.md`
+- `08-frontend-encuesta.md` (listo)
 - `09-frontend-admin.md`
 - `10-oauth-google.md`
 - `11-no-funcionales-y-despliegue.md`

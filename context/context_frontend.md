@@ -119,6 +119,27 @@
     perfil: cambiar nombre, clave actual incorrecta (marca el campo y no cierra la sesión) → link
     de cambio de correo → login con el correo nuevo → eliminar cuenta. Quedan 0 usuarios
     `@test.local` en la base de dev.
+- **Fase 08 (frontend encuesta) — rama `frontend-encuesta`**:
+  - Usa solo los endpoints reales: `GET /encuesta/estado`, `GET /encuesta/obtener/preguntas` y
+    `POST /encuesta/enviar` (409 si ya se envió). No hay guardado por pregunta en el backend.
+  - `services/borradorEncuesta.ts`: el avance (respuestas + pregunta actual) se guarda en
+    `localStorage` por usuario (`borrador-encuesta-<id>`); descarta valores fuera de 1–5 o JSON roto.
+    Se borra al enviar (o al recibir 409).
+  - `encuestaService.obtenerEstado()` → `completada: boolean`.
+  - Componentes: `Pregunta` (radios nativos accesibles, navegables con flechas; anclas
+    "Totalmente en desacuerdo"/"Totalmente de acuerdo" de `docs/preguntas.json`), `ProgresoEncuesta`
+    (`role="progressbar"`), `CompartirLink` (`navigator.share` si existe; si no, copia al
+    portapapeles; si falla, muestra el link para copiar a mano; cancelar el menú no muestra error).
+  - `pages/Encuesta` (`/encuesta`, privada): si ya está completada redirige a `/encuesta/finalizada`;
+    si no, carga preguntas y retoma el borrador. Anterior/Siguiente; en la última, "Enviar
+    encuesta": si falta alguna, avisa cuántas y ofrece "Ir a la pregunta N" (no llama a la API).
+  - `pages/EncuestaFinalizada` (`/encuesta/finalizada`, privada): consulta el estado; si está
+    completa agradece y ofrece compartir `window.location.origin + '/'`; si no, invita a responder.
+  - Verificado: **194 tests en verde**, `tsc`, `oxlint` y build limpios (JS 100 kB gzip). En Chrome
+    contra la API real: login desde `/encuesta` → responder → recargar (retoma el borrador) →
+    enviar incompleta (aviso de faltantes) → teclado (flechas) → completar → enviar → pantalla
+    final → `/encuesta` redirige a la final. En la BD quedó 1 encuesta `is_ok = true` con las 10
+    respuestas elegidas. Usuario de prueba borrado (0 `@test.local`).
 - **Comandos de desarrollo** documentados en la raíz `CLAUDE.md` (sección Comandos):
   `npm install`, `npm run dev`, `npm run build`, `npm run lint`.
 

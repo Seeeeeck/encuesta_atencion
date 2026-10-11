@@ -1,0 +1,27 @@
+.progreso {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.progreso__barra {
+  flex: 1;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--primario-suave);
+  overflow: hidden;
+}
+
+.progreso__relleno {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primario);
+  transition: width 0.3s ease;
+}
+
+.progreso__texto {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+  white-space: nowrap;
+}
