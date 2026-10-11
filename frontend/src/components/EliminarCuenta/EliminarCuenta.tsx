@@ -37,7 +37,7 @@ export function EliminarCuenta() {
         <div className="formulario" role="group" aria-label="Confirmar eliminación">
           <p>¿Seguro? Se borran tu cuenta y tus respuestas de la encuesta. No se puede deshacer.</p>
           <div className="acciones">
-            <button type="button" className="boton boton--peligro" onClick={eliminar} disabled={enviando}>
+            <button type="button" className="boton boton--peligro-confirmar" onClick={eliminar} disabled={enviando}>
               {enviando ? 'Eliminando…' : 'Sí, eliminar'}
             </button>
             <button type="button" className="boton boton--secundario" onClick={() => setConfirmando(false)}>

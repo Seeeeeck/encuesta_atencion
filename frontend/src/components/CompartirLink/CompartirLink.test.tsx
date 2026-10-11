@@ -52,3 +52,10 @@ test('cancelar el menú de compartir no muestra errores', async () => {
 
   expect(screen.queryByDisplayValue(url)).not.toBeInTheDocument();
 });
+
+test('puede mostrarse como acción secundaria', () => {
+  definirNavegador({});
+  render(<CompartirLink url={url} secundario />);
+
+  expect(screen.getByRole('button', { name: 'Compartir la encuesta' })).toHaveClass('boton--secundario');
+});

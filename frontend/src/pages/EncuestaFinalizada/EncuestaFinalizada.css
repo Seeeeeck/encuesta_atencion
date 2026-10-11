@@ -1,0 +1,97 @@
+.final {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.final h1 {
+  margin: 0;
+}
+
+.final p {
+  margin: 0;
+}
+
+.final__aviso {
+  padding: 0.75rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--aviso) 30%, transparent);
+  border-radius: var(--radio-chico);
+  background: var(--aviso-suave);
+  color: var(--aviso);
+}
+
+.final__indice {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border-radius: var(--radio);
+  background: color-mix(in srgb, var(--primario-suave) 70%, transparent);
+}
+
+.final__etiqueta {
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.final__valor {
+  font-family: var(--fuente-titulo);
+  font-size: clamp(2.5rem, 8vw, 3.5rem);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--primario-oscuro);
+  font-variant-numeric: tabular-nums;
+}
+
+.final__valor span {
+  font-family: var(--fuente-texto);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--texto-suave);
+}
+
+.final__mensaje {
+  max-width: 60ch;
+}
+
+.final__bloque h2 {
+  margin-bottom: 0.75rem;
+}
+
+.final__ideas {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.final__ideas li {
+  display: grid;
+  gap: 0.35rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--borde);
+}
+
+.final__afirmacion {
+  font-style: italic;
+  color: var(--texto-suave);
+}
+
+.final__nota {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.final__compartir {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--borde);
+}
+
+.final__respuesta {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primario-oscuro);
+}

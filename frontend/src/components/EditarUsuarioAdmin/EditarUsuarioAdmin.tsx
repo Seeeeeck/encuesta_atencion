@@ -10,6 +10,7 @@ import type { Rol, Sexo, Usuario } from '../../types/usuario';
 import { opcionesRol, opcionesSexo } from '../../utils/opciones';
 import { validarClaveNueva, validarCorreo, validarEdad, validarNombre } from '../../utils/validacion';
 import type { ErroresFormulario } from '../../utils/validacion';
+import { useEnfocarPrimerError } from '../../hooks/useEnfocarPrimerError';
 
 interface Props {
   usuario: Usuario;
@@ -26,6 +27,7 @@ export function EditarUsuarioAdmin({ usuario, onGuardado }: Props) {
   const [sexo, setSexo] = useState<string>(usuario.sexo ?? '');
   const [rol, setRol] = useState<string>(usuario.rol);
   const [errores, setErrores] = useState<ErroresFormulario>({});
+  const refFormulario = useEnfocarPrimerError(errores);
   const [mensaje, setMensaje] = useState('');
   const [estado, setEstado] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -86,7 +88,7 @@ export function EditarUsuarioAdmin({ usuario, onGuardado }: Props) {
   }
 
   return (
-    <form className="formulario" onSubmit={enviar} noValidate>
+    <form ref={refFormulario} className="formulario" onSubmit={enviar} noValidate>
       <h2>Editar datos</h2>
       <MensajeError mensaje={mensaje} />
       {estado && (

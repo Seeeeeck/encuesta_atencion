@@ -1,7 +1,7 @@
 .encuesta {
   display: grid;
-  gap: 1.5rem;
-  max-width: 44rem;
+  gap: 1.75rem;
+  max-width: 46rem;
   margin: 0 auto;
 }
 
@@ -11,14 +11,8 @@
   gap: 0.75rem;
 }
 
-.encuesta__faltantes {
-  padding: 0.75rem 1rem;
-  border-radius: var(--radio);
-  border-left: 4px solid var(--aviso);
-  background: var(--aviso-suave);
-  color: var(--aviso);
-}
-
-.encuesta__faltantes p {
-  margin: 0 0 0.75rem;
+@media (max-width: 30rem) {
+  .encuesta__navegacion .boton {
+    flex: 1;
+  }
 }

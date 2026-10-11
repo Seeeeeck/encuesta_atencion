@@ -10,6 +10,7 @@ import { opcionesSexo } from '../../utils/opciones';
 import { validarRegistro } from '../../utils/validacion';
 import type { ErroresFormulario, FormularioRegistro } from '../../utils/validacion';
 import type { Sexo } from '../../types/usuario';
+import { useEnfocarPrimerError } from '../../hooks/useEnfocarPrimerError';
 
 const vacio: FormularioRegistro = { nombre: '', correo: '', clave: '', edad: '', sexo: '' };
 
@@ -18,6 +19,7 @@ export function Registro() {
   const navegar = useNavigate();
   const [datos, setDatos] = useState<FormularioRegistro>(vacio);
   const [errores, setErrores] = useState<ErroresFormulario>({});
+  const refFormulario = useEnfocarPrimerError(errores);
   const [mensaje, setMensaje] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -56,7 +58,7 @@ export function Registro() {
   return (
     <section className="pagina-angosta tarjeta">
       <h1>Crear cuenta</h1>
-      <form className="formulario" onSubmit={enviar} noValidate>
+      <form ref={refFormulario} className="formulario" onSubmit={enviar} noValidate>
         <MensajeError mensaje={mensaje} />
         <CampoFormulario
           etiqueta="Nombre"

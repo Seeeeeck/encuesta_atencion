@@ -1,23 +1,33 @@
+import { plural } from '../../utils/formato';
 import './ProgresoEncuesta.css';
 
-export function ProgresoEncuesta({ respondidas, total }: { respondidas: number; total: number }) {
-  const porcentaje = total > 0 ? Math.round((respondidas / total) * 100) : 0;
+interface Props {
+  posicion: number;
+  respondidas: number;
+  total: number;
+}
+
+export function ProgresoEncuesta({ posicion, respondidas, total }: Props) {
+  const porcentaje = total > 0 ? Math.round((posicion / total) * 100) : 0;
 
   return (
     <div className="progreso">
+      <div className="progreso__textos">
+        <span className="progreso__posicion">
+          Pregunta {posicion} de {total}
+        </span>
+        <span>{plural(respondidas, 'respondida', 'respondidas')}</span>
+      </div>
       <div
         className="progreso__barra"
         role="progressbar"
         aria-label="Progreso de la encuesta"
-        aria-valuemin={0}
+        aria-valuemin={1}
         aria-valuemax={total}
-        aria-valuenow={respondidas}
+        aria-valuenow={posicion}
       >
         <div className="progreso__relleno" style={{ width: `${porcentaje}%` }} />
       </div>
-      <p className="progreso__texto">
-        {respondidas} de {total} respondidas
-      </p>
     </div>
   );
 }

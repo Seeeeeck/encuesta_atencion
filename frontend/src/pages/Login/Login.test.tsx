@@ -95,3 +95,12 @@ test('ofrece crear una cuenta', () => {
 
   expect(screen.getByRole('link', { name: 'Crea una' })).toHaveAttribute('href', '/registro');
 });
+
+test('al enviar con errores el foco va al primer campo inválido', async () => {
+  servidorFalso();
+  renderLogin();
+
+  await completar('', '');
+
+  expect(screen.getByLabelText('Correo')).toHaveFocus();
+});

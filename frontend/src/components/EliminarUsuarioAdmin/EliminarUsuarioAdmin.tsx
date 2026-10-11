@@ -42,7 +42,7 @@ export function EliminarUsuarioAdmin({ usuario }: { usuario: Usuario }) {
         <div className="formulario" role="group" aria-label="Confirmar eliminación">
           <p>¿Eliminar a {usuario.nombre}? Se borran su cuenta y sus respuestas. No se puede deshacer.</p>
           <div className="acciones">
-            <button type="button" className="boton boton--peligro" onClick={eliminar} disabled={enviando}>
+            <button type="button" className="boton boton--peligro-confirmar" onClick={eliminar} disabled={enviando}>
               {enviando ? 'Eliminando…' : 'Sí, eliminar'}
             </button>
             <button type="button" className="boton boton--secundario" onClick={() => setConfirmando(false)}>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 type Estado = 'inicial' | 'copiado' | 'manual';
 
-export function CompartirLink({ url }: { url: string }) {
+export function CompartirLink({ url, secundario = false }: { url: string; secundario?: boolean }) {
   const [estado, setEstado] = useState<Estado>('inicial');
 
   async function compartir() {
@@ -28,7 +28,7 @@ export function CompartirLink({ url }: { url: string }) {
 
   return (
     <div className="formulario">
-      <button type="button" className="boton" onClick={compartir}>
+      <button type="button" className={secundario ? 'boton boton--secundario' : 'boton'} onClick={compartir}>
         Compartir la encuesta
       </button>
       {estado === 'copiado' && (

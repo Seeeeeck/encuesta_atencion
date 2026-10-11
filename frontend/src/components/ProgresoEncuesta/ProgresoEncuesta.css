@@ -1,12 +1,24 @@
 .progreso {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.progreso__textos {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.progreso__posicion {
+  color: var(--texto);
+  font-weight: 600;
 }
 
 .progreso__barra {
-  flex: 1;
-  height: 0.5rem;
+  height: 0.35rem;
   border-radius: 999px;
   background: var(--primario-suave);
   overflow: hidden;
@@ -16,12 +28,11 @@
   height: 100%;
   border-radius: 999px;
   background: var(--primario);
-  transition: width 0.3s ease;
+  transition: width 0.4s ease-out;
 }
 
-.progreso__texto {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--texto-suave);
-  white-space: nowrap;
+@media (prefers-reduced-motion: reduce) {
+  .progreso__relleno {
+    transition: none;
+  }
 }

@@ -42,6 +42,11 @@ export function Layout() {
     <div className="layout">
       <header className="layout__encabezado">
         <Link to="/" className="layout__marca">
+          <svg className="layout__isotipo" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+            <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.35" />
+            <circle cx="16" cy="16" r="7.5" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.7" />
+            <circle cx="16" cy="16" r="3" fill="currentColor" />
+          </svg>
           Atención
         </Link>
         <nav className="layout__nav" aria-label="Principal">
@@ -50,7 +55,7 @@ export function Layout() {
               <NavLink to="/encuesta">Encuesta</NavLink>
               <NavLink to="/perfil">Perfil</NavLink>
               {esAdmin && <NavLink to="/admin">Panel</NavLink>}
-              <button type="button" className="boton boton--secundario" onClick={salir}>
+              <button type="button" className="layout__salir" onClick={salir}>
                 Salir
               </button>
             </>

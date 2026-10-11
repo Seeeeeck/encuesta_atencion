@@ -191,6 +191,24 @@
     `/impeccable audit`, `/impeccable polish`). **Ojo**: Impeccable trae hooks que corren su script
     en SessionStart, después de cada Edit/Write y en Stop. El marketplace se declara en
     `extraKnownMarketplaces` para que funcione al clonar el repo. Se activan al reiniciar la sesión.
+- **Rediseño según `/impeccable critique` — EN PROGRESO** (rama `frontend-diseno`, solo frontend por
+  decisión del usuario; crítica guardada en `.impeccable/critique/`, 23/40):
+  - Hecho: fuentes `@fontsource-variable/fraunces` (títulos) e `inter` (texto) (dependencias nuevas,
+    aprobadas); tema cálido con campos de color y **vidrio en CSS** (encabezado fijo con blur en `::before`
+    — un backdrop-filter en el propio header rompía la nav fija del celular — y tarjetas), respeta
+    `prefers-reduced-transparency`; isotipo SVG; nav inferior en celular; cajas de estado sin borde lateral;
+    botones de borrar en contorno (relleno solo al confirmar); `useEnfocarPrimerError` en todos los
+    formularios; `Pregunta` con las 5 etiquetas, ✓ SVG, h1 con foco al avanzar y lista vertical < 30rem;
+    `ProgresoEncuesta` por posición; `RevisionEncuesta` antes de enviar (foco al título); resultado
+    personal calculado en el navegador (`utils/resultado.ts`, `services/resultadoEncuesta.ts`) y pantalla
+    final con `MedidorIndice`, ideas, fortaleza con lo que respondió y compartir secundario; 409 explicado.
+  - Pendiente: panel admin (KPIs rotulados, bloque por pregunta, índice desde 1, n bajo, paleta, h1),
+    usuarios (edición bajo demanda, "Sin dato"), correos sin cortar, radios de inputs, `impeccable detect`
+    final, revisión en Chrome del panel, PR. Pendiente de backend (no se toca): columna "¿respondió?",
+    GET usuario por id, seeder `is_ok`, límites de edad, promedio para comparar.
+  - Gotcha: escribir archivos desde la terminal puede hacer que Vite cachee una versión vacía; se
+    resuelve con `touch` del archivo.
+  - Verificado: 281 tests en verde, `tsc` y lint limpios; revisado en Chrome (escritorio + iframe 390px).
 - **Comandos de desarrollo** documentados en la raíz `CLAUDE.md` (sección Comandos):
   `npm install`, `npm run dev`, `npm run build`, `npm run lint`.
 

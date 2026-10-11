@@ -9,6 +9,7 @@ import { useAuth } from '../../context/useAuth';
 import { cambiarCorreo, verificarLinkCambioCorreo } from '../../services/authService';
 import { extraerError } from '../../services/errores';
 import { validarCorreo } from '../../utils/validacion';
+import { useEnfocarPrimerError } from '../../hooks/useEnfocarPrimerError';
 
 type Estado = 'comprobando' | 'formulario' | 'listo' | 'invalido';
 
@@ -22,6 +23,7 @@ export function ActualizarCorreo() {
   const [mensaje, setMensaje] = useState('');
   const [correo, setCorreo] = useState('');
   const [errorCorreo, setErrorCorreo] = useState<string | undefined>();
+  const refFormulario = useEnfocarPrimerError(errorCorreo);
   const [correoNuevo, setCorreoNuevo] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -81,7 +83,7 @@ export function ActualizarCorreo() {
       ) : estado === 'listo' ? (
         <p className="mensaje-exito">Listo. Tu correo ahora es {correoNuevo}.</p>
       ) : (
-        <form className="formulario" onSubmit={enviar} noValidate>
+        <form ref={refFormulario} className="formulario" onSubmit={enviar} noValidate>
           <MensajeError mensaje={mensaje} />
           <CampoFormulario
             etiqueta="Nuevo correo"

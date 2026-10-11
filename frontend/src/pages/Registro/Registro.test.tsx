@@ -101,3 +101,12 @@ test('ofrece ir al login', () => {
 
   expect(screen.getByRole('link', { name: 'Ingresa' })).toHaveAttribute('href', '/login');
 });
+
+test('al enviar con errores el foco va al primer campo inválido', async () => {
+  servidorFalso();
+  renderRegistro();
+
+  await userEvent.click(botonCrear());
+
+  expect(screen.getByLabelText('Nombre')).toHaveFocus();
+});

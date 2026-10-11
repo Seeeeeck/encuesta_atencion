@@ -6,11 +6,13 @@ import { useAuth } from '../../context/useAuth';
 import { actualizarNombre } from '../../services/authService';
 import { extraerError } from '../../services/errores';
 import { validarNombre } from '../../utils/validacion';
+import { useEnfocarPrimerError } from '../../hooks/useEnfocarPrimerError';
 
 export function EditarNombre() {
   const { usuario, actualizarUsuario } = useAuth();
   const [nombre, setNombre] = useState(usuario?.nombre ?? '');
   const [error, setError] = useState<string | undefined>();
+  const refFormulario = useEnfocarPrimerError(error);
   const [mensaje, setMensaje] = useState('');
   const [exito, setExito] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -39,7 +41,7 @@ export function EditarNombre() {
   }
 
   return (
-    <form className="formulario" onSubmit={enviar} noValidate>
+    <form ref={refFormulario} className="formulario" onSubmit={enviar} noValidate>
       <h2>Nombre</h2>
       <MensajeError mensaje={mensaje} />
       {exito && <p className="mensaje-exito">{exito}</p>}

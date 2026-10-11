@@ -7,12 +7,14 @@ import { actualizarClave } from '../../services/authService';
 import { extraerError } from '../../services/errores';
 import { validarClaveNueva } from '../../utils/validacion';
 import type { ErroresFormulario } from '../../utils/validacion';
+import { useEnfocarPrimerError } from '../../hooks/useEnfocarPrimerError';
 
 export function CambiarClave() {
   const [actual, setActual] = useState('');
   const [nueva, setNueva] = useState('');
   const [repetida, setRepetida] = useState('');
   const [errores, setErrores] = useState<ErroresFormulario>({});
+  const refFormulario = useEnfocarPrimerError(errores);
   const [mensaje, setMensaje] = useState('');
   const [exito, setExito] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -58,7 +60,7 @@ export function CambiarClave() {
   }
 
   return (
-    <form className="formulario" onSubmit={enviar} noValidate>
+    <form ref={refFormulario} className="formulario" onSubmit={enviar} noValidate>
       <h2>Clave</h2>
       <MensajeError mensaje={mensaje} />
       {exito && <p className="mensaje-exito">{exito}</p>}

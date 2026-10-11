@@ -1,8 +1,9 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Route, Routes } from 'react-router';
+import { Route, Routes, useLocation } from 'react-router';
 import { Encuesta } from './Encuesta';
 import { guardarBorrador, leerBorrador } from '../../services/borradorEncuesta';
+import { leerResultado } from '../../services/resultadoEncuesta';
 import { guardarSesion } from '../../services/sesion';
 import { renderConRutas } from '../../test/renderConRutas';
 import { servidorFalso } from '../../test/servidorFalso';
@@ -17,18 +18,25 @@ const preguntas = [
 const sinCompletar = { data: { completada: false } };
 const conPreguntas = { data: { preguntas } };
 
+function PantallaFinal() {
+  const { state } = useLocation();
+  const yaEnviada = (state as { yaEnviada?: boolean } | null)?.yaEnviada;
+  return <p>pantalla finalizada{yaEnviada ? ' (ya enviada)' : ''}</p>;
+}
+
 function renderEncuesta() {
   return renderConRutas(
     <Routes>
       <Route path="/encuesta" element={<Encuesta />} />
-      <Route path="/encuesta/finalizada" element={<p>pantalla finalizada</p>} />
+      <Route path="/encuesta/finalizada" element={<PantallaFinal />} />
     </Routes>,
     '/encuesta',
   );
 }
 
-const elegir = (valor: string) => userEvent.click(screen.getByRole('radio', { name: new RegExp(`^${valor}`) }));
+const elegir = (valor: string) => userEvent.click(screen.getByRole('radio', { name: new RegExp(`^${valor} `) }));
 const boton = (nombre: string) => screen.getByRole('button', { name: nombre });
+const titulo = () => screen.getByRole('heading', { level: 1 });
 
 beforeEach(() => {
   localStorage.clear();
@@ -48,8 +56,9 @@ test('carga las preguntas y empieza por la primera', async () => {
 
   renderEncuesta();
 
-  expect(await screen.findByText('Primera afirmación')).toBeInTheDocument();
-  expect(screen.getByText('0 de 3 respondidas')).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { level: 1, name: 'Primera afirmación' })).toBeInTheDocument();
+  expect(screen.getByText('Pregunta 1 de 3')).toBeInTheDocument();
+  expect(screen.getByText('0 respondidas')).toBeInTheDocument();
   expect(peticiones.map((p) => p.url)).toEqual(['/encuesta/estado', '/encuesta/obtener/preguntas']);
 });
 
@@ -60,12 +69,22 @@ test('avanza, vuelve atrás y conserva la respuesta anterior', async () => {
 
   await elegir('4');
   await userEvent.click(boton('Siguiente'));
-  expect(screen.getByText('Segunda afirmación')).toBeInTheDocument();
-  expect(screen.getByText('1 de 3 respondidas')).toBeInTheDocument();
+  expect(titulo()).toHaveTextContent('Segunda afirmación');
+  expect(screen.getByText('1 respondida')).toBeInTheDocument();
 
   await userEvent.click(boton('Anterior'));
-  expect(screen.getByText('Primera afirmación')).toBeInTheDocument();
-  expect(screen.getByRole('radio', { name: '4' })).toBeChecked();
+  expect(titulo()).toHaveTextContent('Primera afirmación');
+  expect(screen.getByRole('radio', { name: '4 De acuerdo' })).toBeChecked();
+});
+
+test('al cambiar de pregunta el foco va al texto nuevo', async () => {
+  servidorFalso([sinCompletar, conPreguntas]);
+  renderEncuesta();
+  await screen.findByText('Primera afirmación');
+
+  await userEvent.click(boton('Siguiente'));
+
+  expect(titulo()).toHaveFocus();
 });
 
 test('en la primera pregunta no se puede ir atrás', async () => {
@@ -93,32 +112,46 @@ test('retoma un borrador guardado', async () => {
 
   renderEncuesta();
 
-  expect(await screen.findByText('Tercera afirmación')).toBeInTheDocument();
-  expect(screen.getByText('2 de 3 respondidas')).toBeInTheDocument();
+  expect(await screen.findByRole('heading', { level: 1, name: 'Tercera afirmación' })).toBeInTheDocument();
+  expect(screen.getByText('2 respondidas')).toBeInTheDocument();
 });
 
-test('no deja enviar incompleta y permite ir a las que faltan', async () => {
-  guardarBorrador(usuarioDePrueba.id, { respuestas: { 11: 5 }, indice: 2 });
+test('después de la última pregunta muestra la revisión en vez de enviar directo', async () => {
+  guardarBorrador(usuarioDePrueba.id, { respuestas: { 11: 5, 12: 1 }, indice: 2 });
   const peticiones = servidorFalso([sinCompletar, conPreguntas]);
   renderEncuesta();
   await screen.findByText('Tercera afirmación');
 
-  await userEvent.click(boton('Enviar encuesta'));
+  await elegir('3');
+  await userEvent.click(boton('Revisar respuestas'));
 
-  expect(screen.getByRole('alert')).toHaveTextContent('Te falta responder 2 preguntas.');
+  expect(titulo()).toHaveTextContent('Revisa tus respuestas');
   expect(peticiones).toHaveLength(2);
-
-  await userEvent.click(boton('Ir a la pregunta 2'));
-  expect(screen.getByText('Segunda afirmación')).toBeInTheDocument();
 });
 
-test('con todo respondido envía la encuesta, borra el borrador y muestra el final', async () => {
-  guardarBorrador(usuarioDePrueba.id, { respuestas: { 11: 5, 12: 1 }, indice: 2 });
+test('desde la revisión se puede cambiar una respuesta y volver a la revisión', async () => {
+  guardarBorrador(usuarioDePrueba.id, { respuestas: { 11: 5, 12: 1, 13: 3 }, indice: 2 });
+  servidorFalso([sinCompletar, conPreguntas]);
+  renderEncuesta();
+  await screen.findByText('Tercera afirmación');
+  await userEvent.click(boton('Revisar respuestas'));
+
+  await userEvent.click(boton('Cambiar la respuesta 2'));
+  expect(titulo()).toHaveTextContent('Segunda afirmación');
+  await elegir('5');
+  await userEvent.click(boton('Volver a la revisión'));
+
+  expect(titulo()).toHaveTextContent('Revisa tus respuestas');
+  expect(within(screen.getAllByRole('listitem')[1]).getByText('5 · Totalmente de acuerdo')).toBeInTheDocument();
+});
+
+test('al enviar desde la revisión guarda el resultado, borra el borrador y muestra el final', async () => {
+  guardarBorrador(usuarioDePrueba.id, { respuestas: { 11: 5, 12: 1, 13: 3 }, indice: 2 });
   const peticiones = servidorFalso([sinCompletar, conPreguntas, { data: { message: 'ok' } }]);
   renderEncuesta();
   await screen.findByText('Tercera afirmación');
+  await userEvent.click(boton('Revisar respuestas'));
 
-  await elegir('3');
   await userEvent.click(boton('Enviar encuesta'));
 
   expect(await screen.findByText('pantalla finalizada')).toBeInTheDocument();
@@ -133,18 +166,21 @@ test('con todo respondido envía la encuesta, borra el borrador y muestra el fin
       ],
     },
   });
+  // ajustados: 6-5=1, 1, 6-3=3 -> 1.67
+  expect(leerResultado(usuarioDePrueba.id)?.indice).toBe(1.67);
   expect(leerBorrador(usuarioDePrueba.id)).toEqual({ respuestas: {}, indice: 0 });
 });
 
-test('si el backend dice que ya la envió (409) va a la pantalla final', async () => {
+test('si el backend dice que ya la envió (409) lo explica en la pantalla final', async () => {
   guardarBorrador(usuarioDePrueba.id, { respuestas: { 11: 5, 12: 1, 13: 2 }, indice: 2 });
   servidorFalso([sinCompletar, conPreguntas, { status: 409, data: { message: 'La encuesta ya fue enviada.' } }]);
   renderEncuesta();
   await screen.findByText('Tercera afirmación');
+  await userEvent.click(boton('Revisar respuestas'));
 
   await userEvent.click(boton('Enviar encuesta'));
 
-  expect(await screen.findByText('pantalla finalizada')).toBeInTheDocument();
+  expect(await screen.findByText('pantalla finalizada (ya enviada)')).toBeInTheDocument();
 });
 
 test('si falla el envío muestra el error y conserva las respuestas', async () => {
@@ -152,6 +188,7 @@ test('si falla el envío muestra el error y conserva las respuestas', async () =
   servidorFalso([sinCompletar, conPreguntas, { status: 500 }]);
   renderEncuesta();
   await screen.findByText('Tercera afirmación');
+  await userEvent.click(boton('Revisar respuestas'));
 
   await userEvent.click(boton('Enviar encuesta'));
 

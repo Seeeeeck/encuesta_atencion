@@ -8,6 +8,7 @@ import { iniciarSesion as iniciarSesionApi } from '../../services/authService';
 import { extraerError } from '../../services/errores';
 import { validarLogin } from '../../utils/validacion';
 import type { ErroresFormulario } from '../../utils/validacion';
+import { useEnfocarPrimerError } from '../../hooks/useEnfocarPrimerError';
 
 export function Login() {
   const { iniciarSesion } = useAuth();
@@ -16,6 +17,7 @@ export function Login() {
   const [correo, setCorreo] = useState('');
   const [clave, setClave] = useState('');
   const [errores, setErrores] = useState<ErroresFormulario>({});
+  const refFormulario = useEnfocarPrimerError(errores);
   const [mensaje, setMensaje] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -49,7 +51,7 @@ export function Login() {
   return (
     <section className="pagina-angosta tarjeta">
       <h1>Ingresar</h1>
-      <form className="formulario" onSubmit={enviar} noValidate>
+      <form ref={refFormulario} className="formulario" onSubmit={enviar} noValidate>
         <MensajeError mensaje={mensaje} />
         <CampoFormulario
           etiqueta="Correo"
