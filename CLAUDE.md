@@ -106,7 +106,7 @@
 - `00-setup-entorno.md` (listo)
 - `01-backend-base.md` (listo)
 - `02-modelo-datos.md` (listo)
-- `03-auth-backend.md`
+- `03-auth-backend.md` (listo)
 - `04-encuesta-backend.md` (listo)
 - `05-admin-backend.md` (listo)
 - `06-frontend-base.md`
