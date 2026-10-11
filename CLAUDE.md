@@ -110,7 +110,7 @@
 - `04-encuesta-backend.md` (listo)
 - `05-admin-backend.md` (listo)
 - `06-frontend-base.md` (listo)
-- `07-frontend-auth.md`
+- `07-frontend-auth.md` (listo)
 - `08-frontend-encuesta.md`
 - `09-frontend-admin.md`
 - `10-oauth-google.md`

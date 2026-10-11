@@ -84,6 +84,41 @@
     En Chrome contra la API real: inicio, navegación cliente, 404 y `/health` vía CORS.
   - Restos de la demo de Vite borrados (confirmado por el usuario): `src/App.tsx`,
     `src/App.css`, `src/assets/*`, `public/icons.svg`.
+- **Fase 07 (frontend auth) — rama `frontend-auth`** (sale de `frontend-base`; PR contra esa rama
+  hasta que se mergee la Fase 06):
+  - `src/utils/validacion.ts`: copia las reglas de los Form Requests (`validarNombre` 3–100,
+    `validarCorreo` con dominio y máx. 150, `validarClaveNueva` 5–100 + mayúscula + símbolo
+    `/[\W_]/`, `validarEdad` entero 1–200 opcional, `validarRegistro`, `validarLogin` sin reglas de
+    complejidad). `src/utils/opciones.ts`: opciones y textos de sexo (`M`, `F`, `N/R` = "Prefiero no
+    responder").
+  - `CampoFormulario`: label + input o select (`opciones`), error con `aria-invalid` y
+    `aria-describedby`, texto de ayuda, marca "(opcional)".
+  - Páginas: `Login` (vuelve a `state.desde` o va a `/admin`/`/encuesta` según el rol), `Registro`
+    (edad/sexo vacíos → `null`), `VerificarCorreo` (`/verificar-correo`, verifica al cargar; con
+    sesión refresca `/me` para que el aviso desaparezca), `ActualizarCorreo` (`/actualizar-correo`,
+    comprueba la firma del link antes de mostrar el formulario; 403 = link vencido o ya usado),
+    `Perfil` (datos + estado de verificación, refresca `/me` al entrar).
+  - Componentes del perfil, uno por acción y cada uno con su test: `EditarNombre`, `CambiarClave`
+    (clave actual + nueva + repetida), `SolicitarCambioCorreo`, `EliminarCuenta` (confirmación en
+    la misma pantalla, sin `window.confirm`).
+  - `Layout`: aviso "Te mandamos un correo para verificar tu cuenta…" si `is_verified` es false
+    (decisión: el login deja entrar sin verificar).
+  - **`sinCierreDeSesion`** (opción propia de axios, declarada con module augmentation en
+    `apiClient.ts`): el backend responde **401** cuando la *clave actual* es incorrecta; sin esta
+    marca el interceptor lo tomaba como token vencido y cerraba la sesión. `actualizarClave` la usa.
+  - **Gotcha de react-router v8**: `navigate()` se aplica dentro de `startTransition`, pero cambiar
+    la sesión es una actualización urgente que se aplica antes. Si se cierra/abre la sesión y
+    después se navega, el guard de la ruta actual redirige primero (eliminar cuenta terminaba en
+    `/login`; el login desde una página privada no volvía a ella). Se resuelve haciendo ambas cosas
+    dentro del mismo `startTransition` (`EliminarCuenta`, `Login`). Cubierto con tests de
+    integración en `AppRutas.test.tsx`.
+  - Rutas (`AppRutas`): públicas `/`, `/verificar-correo`, `/actualizar-correo`; solo invitados
+    `/login`, `/registro`; privada `/perfil`. `/encuesta` todavía es 404 (Fase 08).
+  - Verificado: **162 tests en verde**, `tsc`, `oxlint` y build limpios. En Chrome contra la API
+    real: registro → aviso de verificación → link de verificación (firma real de Laravel) →
+    perfil: cambiar nombre, clave actual incorrecta (marca el campo y no cierra la sesión) → link
+    de cambio de correo → login con el correo nuevo → eliminar cuenta. Quedan 0 usuarios
+    `@test.local` en la base de dev.
 - **Comandos de desarrollo** documentados en la raíz `CLAUDE.md` (sección Comandos):
   `npm install`, `npm run dev`, `npm run build`, `npm run lint`.
 

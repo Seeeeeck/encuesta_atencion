@@ -1,0 +1,31 @@
+.perfil {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.perfil h2 {
+  margin: 0;
+}
+
+.perfil__datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.perfil__datos dt {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.perfil__datos dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.perfil__peligro {
+  border-color: var(--error-suave);
+}

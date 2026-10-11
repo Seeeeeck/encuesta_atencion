@@ -45,7 +45,11 @@ export async function actualizarNombre(nombre: string): Promise<Usuario> {
 }
 
 export async function actualizarClave(claveActual: string, claveNueva: string): Promise<void> {
-  await apiClient.put('/me/actualizar/clave', { clave_actual: claveActual, clave_nueva: claveNueva });
+  await apiClient.put(
+    '/me/actualizar/clave',
+    { clave_actual: claveActual, clave_nueva: claveNueva },
+    { sinCierreDeSesion: true },
+  );
 }
 
 export async function pedirCambioCorreo(): Promise<string> {

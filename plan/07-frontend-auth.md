@@ -5,14 +5,15 @@ Páginas y componentes de cuenta: registro, login, perfil (editar), logout y eli
 con validación en cliente (además de la del backend).
 
 ## Pasos
-1. Páginas en `src/pages/`: `Registro`, `Login`, `Perfil`.
-2. Componentes de formulario reutilizables en `src/components/` (inputs validados, mensajes de error).
+1. Páginas en `src/pages/`: `Registro`, `Login`, `Perfil`. (listo)
+2. Componentes de formulario reutilizables en `src/components/` (inputs validados, mensajes de error). (listo)
 3. Validación en cliente: correo válido, clave segura, edad numérica, sexo permitido — coherente con
-   las reglas del backend (fase 03).
-4. Flujo de sesión: guardar token tras login/registro, redirigir a la encuesta; logout limpia estado.
-5. Edición de perfil (`PUT /me`) y eliminación de cuenta (`DELETE /me`) con confirmación.
-6. Rutas privadas protegidas: sin sesión → redirige a login.
-7. Verificación de correo:
+   las reglas del backend (fase 03). (listo)
+4. Flujo de sesión: guardar token tras login/registro, redirigir a la encuesta; logout limpia estado. (listo)
+5. Edición de perfil (`PUT /me/actualizar/nombre`, `PUT /me/actualizar/clave`, cambio de correo
+   por link firmado) y eliminación de cuenta (`DELETE /me/eliminar/usuario`) con confirmación. (listo)
+6. Rutas privadas protegidas: sin sesión → redirige a login. (listo)
+7. Verificación de correo (listo), más la página `/actualizar-correo` del cambio de correo:
    - Página `/verificar-correo` (`src/pages/VerificarCorreo/*`) que, **al cargar**, lee los query
      params del link del email (`id`, `hash`, `expires`, `signature`), reconstruye la URL firmada y
      le pega automáticamente al backend (`verification.verify`), y muestra un mensaje de resultado

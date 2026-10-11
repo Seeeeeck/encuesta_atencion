@@ -61,6 +61,11 @@ export function Layout() {
           No se pudo conectar con el servidor. Algunas acciones pueden fallar.
         </p>
       )}
+      {usuario && !usuario.is_verified && (
+        <p className="layout__aviso">
+          Te mandamos un correo para verificar tu cuenta. Abrí el link que llegó a {usuario.correo}.
+        </p>
+      )}
       <main className="layout__contenido">
         <Outlet />
       </main>
