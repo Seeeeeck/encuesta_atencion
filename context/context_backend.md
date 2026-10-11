@@ -346,7 +346,7 @@
       `user/destroy` borra usuarios sin autenticación — **quitar antes de mergear a `main`**.
     - También se agregó `POST /destroy/user` → `destroy` dentro del grupo `auth:sanctum` (alias del
       `DELETE /me`, para pruebas).
-    - **Pendiente**: estas rutas/métodos `//TEST` se quitan antes de cerrar la fase / mergear a `main`.
+    - **Eliminadas** en la rama `admin` (Fase 05), antes de mergear a `main`.
   - Falta cerrar el paso 2: considerar tests de Feature para estos 5 endpoints.
   - **Tests reestructurados**: los tests de Feature en `tests/Feature/Api/` pasaron a subcarpetas
     por endpoint: `login/Test.php` (`Tests\Feature\Api\Login\Test`) y `register/Test.php`
@@ -607,12 +607,223 @@
   - **Fase 04 completa (`listo`)**. Se decidió no agregar assert de `is_ok` en
     `test_enviar_encuesta`: el campo se setea en `EncuestaController` pero ningún endpoint lo lee
     todavía (no hay endpoint de estado), así que no aporta cubrir algo que no se consume.
+- **Fase 05 (admin backend) — en progreso**, rama `admin`:
+  - `app/Http/Middleware/EsAdmin.php` creado: `handle()` verifica `$request->user()->rol !== 'admin'`
+    y hace `abort(403, "El usuario no es administrador")` si no lo es; si es admin, `return $next($request)`.
+    Registrado como alias `es_admin` (usado en `routes/api.php` en `Route::middleware(['auth:sanctum',
+    'es_admin', 'throttle:60,1'])`).
+  - `app/Http/Controllers/Api/AdminController.php` creado (namespace `App\Http\Controllers\Api`,
+    **no** `Api\Admin` — se descartó ese subnamespace; hubo una versión intermedia en
+    `Api/Admin/UsuarioController.php` que se movió/renombró a este archivo) con 2 métodos, mismo
+    patrón `try/catch` + `Log::error()` que el resto de los controllers:
+    - `listarUsuarios()` — `GET /admin/usuarios`: `Usuario::paginate(10)`, responde `{"message":
+      ..., "usuarios": $usuarios}` (el paginador serializa con `data` + metadata `current_page`,
+      `last_page`, `per_page`, `total`, etc., anidado bajo la key `usuarios`).
+    - `obtenerUsuarioRespuestas()` — `GET /admin/usuarios/{id}/respuestas`: 3 validaciones en cadena,
+      cada una con su propio `404`: 1) usuario no existe (`Usuario::where('id', $id_usuario)->first()`
+      null); 2) usuario existe pero no tiene `Encuesta` (`El usuario aún no realiza la encuesta`);
+      3) la encuesta existe pero no tiene todas las respuestas — compara `count($respuestas) !==
+      Pregunta::count()` (dinámico, **no** hardcodeado a `10` — se corrigió durante el desarrollo
+      para no quedar desactualizado si cambia la cantidad de preguntas del seeder). Si pasa las 3,
+      responde `200` con `{"message": ..., "respuestas": $respuestas}`.
+  - Rutas en `routes/api.php`, grupo nuevo `Route::middleware(['auth:sanctum', 'es_admin',
+    'throttle:60,1'])`: `GET /admin/usuarios` → `listarUsuarios`, `GET /admin/usuarios/{id}/respuestas`
+    → `obtenerUsuarioRespuestas`. Reemplaza el closure placeholder que devolvía `1` a mano.
+  - **Convención nueva en toda la app**: los mensajes de error `500` (dentro de cada `catch`) ahora
+    llevan el prefijo `Err:` (ej. `"Err:Ocurrió un error al registrar el usuario."`). Aplicado en
+    `AuthController`, `EncuestaController`, `PerfilController` y `AdminController`.
+  - **Factories nuevas** para tests: `database/factories/UsuarioFactory.php`,
+    `EncuestaFactory.php` (usa `for($usuario, 'usuario')` para asociar), `RespuestaFactory.php`
+    (**solo** define `respuesta` con `fake()->randomElement([1,2,3,4,5])` — **no** define
+    `id_pregunta` ni `id_encuesta`, hay que pasarlos con `for()`/`sequence()` al llamarla).
+  - **Tests** en `tests/Feature/Api/admin/AdminController/Test.php` (namespace
+    `Tests\Feature\Api\admin\AdminController`, con `RefreshDatabase`), 9 tests, todos en verde:
+    - `test_listar_usuarios` (200 admin), `test_usuarios_authorization` (403 no-admin),
+      `test_listar_usuarios_sin_token` (401).
+    - `test_obtener_respuestas_sin_encuesta` (404, usuario sin `Encuesta`),
+      `test_obtener_respuestas_sin_respuestas` (404, encuesta sin todas las respuestas),
+      `test_obtener_respuestas_por_id_usuario` (200, 10 respuestas — `assertJsonCount(10,
+      'respuestas')`), `test_obtener_respuestas_id_equivocado_token_valido` (404, id de usuario
+      inexistente), `test_obtener_respuestas_sin_token` (401),
+      `test_obtener_respuestas_usuario_normal_sin_permiso` (403).
+    - **Bug de aislamiento encontrado y corregido** (mismo patrón que ya se había visto en la Fase
+      04): las secuencias de Postgres no son transaccionales, así que sembrar `Pregunta` con el
+      seeder sin `Pregunta::truncate()` antes hacía que los ids arrancaran en 11, 21, etc. en tests
+      sucesivos de la misma clase — rompía los `id_pregunta` hardcodeados (1 a 10) usados en el
+      `sequence()` de `Respuesta::factory()`. Se agregó `Pregunta::truncate()` antes de cada
+      `PreguntaSeeder::run()` en estos tests.
+    - Para variar el `id_pregunta` en las 10 `Respuesta` creadas por test (evitando el índice único
+      `(id_encuesta, id_pregunta)`) se usa `->sequence(['id_pregunta' => 1], ['id_pregunta' => 2],
+      ...)` encadenado a la factory — permite asignar un valor distinto en cada `create()` sucesivo
+      sin tener que resolverlo dentro de la propia `definition()` de la factory (que no tiene forma
+      de recordar qué valores ya usó en llamadas anteriores).
+  - **`editarUsuario()` agregado** a `AdminController` — `PUT /admin/usuario/editar` (nota:
+    ruta plana, no `PUT /admin/usuarios/{id}`; el `id` va en el body). Valida con
+    `App\Http\Requests\editarUsuarioRequest` (`id` required|numeric|exists:usuario,id;
+    `nombre` min:3|max:100|string; `clave` string|min:5|max:100 + 2 regex (mayúscula y
+    símbolo); `edad` nullable|integer|min:1|max:200; `sexo` nullable|in:M,F,N/R|string;
+    `rol` in:admin,usuario|string; `regla` required_without_all:nombre,edad,sexo,rol,clave
+    — exige que venga al menos uno de los 5 campos editables). El controller actualiza
+    solo los campos presentes vía `$request->filled(...)` (edición parcial), 404 si el
+    `id` no corresponde a un usuario, 500 si `save()` falla, mismo patrón `try/catch` +
+    `Log::error()` con prefijo `Err:`. `eliminarUsuario()` **creado como stub vacío**
+    (`Request $request) {}`), ruta `DELETE /admin/usuario/eliminar` ya registrada — falta
+    la implementación.
+  - **Tests de `editarUsuario`** agregados a `tests/Feature/Api/admin/AdminController/Test.php`,
+    usando `#[DataProvider]` de PHPUnit para no repetir el mismo test por cada campo/regla:
+    - `datosInvalidosProvider()` + `test_editar_usuario_datos_invalidos(string $campo, $valor,
+      string $errorEsperado)`: cubre las 3 reglas de `id` (faltante/no numérico/no existe) y
+      cada regla de `nombre`, `clave` (min, max, sin mayúscula, sin símbolo), `edad`, `sexo`,
+      `rol`. Payload se arma como `['id' => $usuario->id, $campo => $valor]` (si `$campo`
+      es `'id'`, la segunda entrada pisa a la primera). Assert: `422` +
+      `assertJsonValidationErrors($campo)` — clave del JSON de errores es el **nombre del
+      campo**, nunca `campo.regla` (esa notación solo existe dentro de `messages()` del
+      FormRequest, no en la respuesta).
+    - `datosValidosProvider()` + `test_editar_usuario_datos_validos(...)`: cubre los valores
+      límite válidos de cada regla (min/max exactos, cada valor de los `in:`). Assert: `200`
+      + `assertJson(...)` comparando contra `Usuario::where('id', $usuario->id)->first()`
+      (**no** contra la variable `$usuario` original en memoria, que no se refresca sola
+      tras el `put()` — bug encontrado durante el desarrollo: comparar contra el objeto viejo
+      hacía que el test fallara mostrando el valor nuevo correcto contra el esperado viejo).
+    - `test_editar_usuario_ningun_valor_enviado()`: caso aparte (no cabe en ningún data
+      provider por campo, ya que valida la *ausencia* de todos los campos editables a la
+      vez) — payload solo con `id`, espera `422` + `assertJsonValidationErrors('regla')`.
+  - **`editarUsuarioRequest` renombrado a `EditarUsuarioRequest`** (PascalCase, convención
+    Laravel) — mismo contenido, solo el nombre del archivo/clase cambia; `AdminController`
+    actualizado para importar la clase nueva.
+  - **`eliminarUsuario()` implementado** (ya no es un stub) — `DELETE /admin/usuario/eliminar`,
+    validado por `EliminarUsuarioRequest` (`id` required|numeric): busca el `Usuario` por
+    `id`, 404 si no existe; **revoca los tokens de Sanctum antes de destruir** (`$usuario->
+    tokens()->delete()` → `Usuario::destroy($request->id)`) — mismo motivo que ya se había
+    encontrado en `PerfilController::destroy()`: `personal_access_tokens` no tiene FK real
+    hacia `usuario` (relación polimórfica sin constraint a nivel BD), así que si se borra el
+    usuario primero, los tokens quedan huérfanos. 500 si `destroy()` no borra ninguna fila,
+    200 si se elimina. Mismo patrón `try/catch` + `Log::error()` con prefijo `Err:`.
+  - **Tests de `eliminarUsuario`** agregados a `tests/Feature/Api/admin/AdminController/Test.php`:
+    `test_eliminar_usuario` (200; crea un token para el `$usuario` a eliminar, lo revoca a mano
+    para simular el estado esperado tras el endpoint y confirma `count() === 0`; llama al
+    endpoint autenticado **como admin** y confirma con `assertNull(Usuario::where('id', ...)
+    ->first())` que el usuario ya no existe) y `test_eliminar_usuario_inexistente` (404, id
+    que no existe). **Bug encontrado y corregido durante el desarrollo del test**: la primera
+    versión reasignaba la variable `$token` (creada para `$user_admin` en la línea de
+    autenticación) al crear el token de `$usuario`, pisándola — la request `DELETE` terminaba
+    mandando el token del usuario normal (ya revocado por la propia prueba, así que ni
+    siquiera un token válido) en vez del token del admin, y el endpoint nunca llegaba a
+    ejecutarse de verdad (el `assertNull` pasaba por motivos equivocados o fallaba según el
+    caso). Corregido sin reutilizar la variable `$token` para el usuario normal.
+  - **`UpdateCorreoRequest` actualizado**: se habían vaciado sus `rules()`/`messages()` a
+    propósito (ver más arriba, la validación de `correo` se confiaba solo al middleware
+    `signed` + lógica inline). Se revirtió esa decisión: ahora valida `correo` con
+    `required|email|unique:usuario,correo` (con sus 3 mensajes en español), sumando una capa
+    de validación explícita sobre el endpoint `PUT /me/actualizar/correo` además del `signed`.
+  - Rutas nuevas en `routes/api.php`, dentro del grupo `auth:sanctum` + `es_admin`:
+    `PUT /admin/usuario/editar` → `editarUsuario`, `DELETE /admin/usuario/eliminar` →
+    `eliminarUsuario`.
+  - Suite completa verificada tras estos cambios: `php artisan test` → **82 tests, 164
+    assertions, todos en verde**.
+  - **`MetricasController` creado** (lo escribió el asistente a pedido del usuario, "hacelo tú") —
+    `app/Http/Controllers/Api/MetricasController.php` (namespace `Api`, no `ApiAdmin`, separado de
+    `AdminController` por responsabilidad única). `obtenerMetricas()` → `GET /admin/metricas`, un solo
+    endpoint que devuelve `{"message", "metricas": {resumen, por_pregunta, por_edad, por_sexo}}`:
+    - **Decisiones del usuario**: edad agrupada por **rangos** (`<18`, `18-25`, `26-35`, `36-50`, `>50`,
+      `Sin dato`); promedio **crudo + ajustado**; **un solo endpoint**.
+    - **Valor ajustado**: las preguntas `tipo = 'N'` se invierten con `6 - respuesta` (SQL `CASE`), así en
+      toda métrica ajustada 5 = mejor atención. El "índice de atención" es el `AVG` del valor ajustado.
+    - `resumen`: `total_usuarios` (solo `rol = usuario`), `total_encuestas`, `encuestas_completadas`
+      (`is_ok = true`), `indice_atencion_general`.
+    - `por_pregunta`: `LEFT JOIN` desde `pregunta` (aparecen aunque no tengan respuestas) con
+      `total_respuestas`, `promedio`, `promedio_ajustado` y `distribucion` `{"1".."5": cantidad}`
+      (arranca en 0; se calcula con un segundo `GROUP BY id_pregunta, respuesta`).
+    - `por_edad` / `por_sexo`: método privado genérico `porGrupo()` (JOIN respuesta→pregunta→encuesta→
+      usuario, `COUNT(DISTINCT encuesta.id)` + índice). Siempre devuelve todas las categorías (las vacías
+      con `encuestas: 0` e `indice_atencion: null`) para que el gráfico del panel sea estable. Sexo
+      `null` → `Sin dato` (`COALESCE`).
+    - Postgres devuelve `AVG` como texto numérico → `redondear()` lo pasa a float con 2 decimales.
+    - Todo el cálculo lo hace la BD (agregación + `GROUP BY`); no se traen filas sueltas a PHP.
+  - Ruta `GET /admin/metricas` agregada al grupo admin en `routes/api.php` (+ `use MetricasController`).
+  - **Tests** en `tests/Feature/Api/admin/MetricasController/Test.php` (4 tests, 25 assertions): sin token
+    401, usuario normal 403, sin respuestas (todo en 0/null, 6 rangos, 4 sexos) y cálculos exactos con 2
+    usuarios y 2 preguntas (P y N). Crean sus propias `Pregunta` y usan los ids devueltos (no hardcodeados).
+  - **Efecto colateral corregido**: estos tests avanzan la secuencia de `pregunta` (no transaccional en
+    Postgres) y rompían `encuesta/Test::test_obtener_preguntas`, que sembraba sin `Pregunta::truncate()`
+    y esperaba ids 1–10. Se le agregó el `truncate()` igual que al resto de los tests.
+  - Suite completa: **86 tests, 189 assertions, en verde** (corrida 2 veces seguidas).
+  - Nota: `DatosPruebaSeeder` crea las encuestas con `is_ok = false` (default), así que con esos datos
+    `encuestas_completadas` da 0 aunque tengan todas las respuestas.
+  - **Edición de correo por el admin** (paso 4 del plan, lo escribió el asistente a pedido del usuario):
+    `EditarUsuarioRequest` acepta `correo` (`email`, `max:150`,
+    `Rule::unique('usuario', 'correo')->ignore($this->id)` → único sin contar al propio usuario editado,
+    así mandar su mismo correo no da 422) + 3 mensajes en español; `correo` sumado a
+    `required_without_all` de `regla`. `AdminController::editarUsuario()` actualiza `correo` si viene
+    (`filled`). No toca `is_verified`. Tests nuevos en los data providers: inválidos `correo_invalido`,
+    `correo_largo`, `correo_de_otro` (422); válidos `correo_nuevo`, `correo_propio` (200).
+  - **Rutas y métodos `//TEST` eliminados** (confirmado por el usuario antes del merge a `main`):
+    `GET user/email` y `POST user/destroy` de `routes/api.php`, y `showUserByEmail()` /
+    `deleteUserByEmail()` de `PerfilController`. Ya no existe la ruta pública que borraba usuarios sin auth.
+  - Suite completa: **91 tests, 202 assertions, en verde** (2 corridas seguidas).
+  - **Fase 05 completa (`listo`)** — los 5 pasos de `plan/05` marcados.
 - **Logs**: se usa `storage/logs/laravel.log` (canal `single` por defecto de Laravel). No se
   creó una carpeta `/logs` aparte — el paso 5 de la Fase 00 se marcó listo así.
 - **`.gitignore`**: el que trae Laravel 11+ ya cubre `.env`, `/vendor`, `/node_modules` y todo
   `storage/*` (vía `*.log` + `.gitignore` anidados en `storage/framework/*`). No requirió ajustes.
 - **Comandos de desarrollo** documentados en la raíz `CLAUDE.md` (sección Comandos):
   `composer install`, `php artisan migrate`, `php artisan serve`, `php artisan test`.
+- **Tests de los endpoints que no tenían cobertura** (2026-10-11, rama `admin`, escritos por el asistente a
+  pedido del usuario). Cada archivo arranca con un comentario "Casos de uso cubiertos":
+  - `tests/Feature/Api/perfil/Test.php` (`TestsFeatureApiPerfil`): `GET /me` (datos sin clave, 401),
+    `PUT /me/actualizar/nombre` (200, 422 faltante/corto/largo, 401), `PUT /me/actualizar/clave` (200 + login
+    con la nueva y 401 con la vieja, 401 clave actual incorrecta, 422 x6, 401 sin token),
+    `DELETE /me/eliminar/usuario` (borra usuario + tokens, cascada a encuesta/respuestas, token inservible
+    después, 401).
+  - `tests/Feature/Api/correo/Test.php` (`TestsFeatureApiCorreo`): el registro manda `VerificarCorreo`
+    (`Notification::fake()`); `GET /email/verificar/{id}/{hash}` (200 + `is_verified`, 403 hash de otro correo,
+    404 usuario inexistente, 403 firma alterada/vencida/sin firma); `GET /me/actualizar/correo/verificacion`
+    (manda `VerificarCambioCorreo`, 401); `GET .../verificacion/firma` (200, 403 x3); `PUT /me/actualizar/correo`
+    (200, **403 link reusado**, 403 hash de otro correo, 403 x3 link inválido, 422 faltante/formato/ocupado, 404).
+    Los links se arman en el test con `URL::temporarySignedRoute()` (igual que las notificaciones), sin leer mails.
+  - `tests/Feature/Api/health/Test.php`: `GET /health` → 200 `{"status":"ok"}`.
+  - **Gotcha de tests**: dentro de un mismo test la app se reutiliza entre requests; tras pasar por
+    `auth:sanctum` el guard por defecto queda en `sanctum` (y recuerda al usuario), entonces un `POST /login`
+    posterior tiraba 500 (`RequestGuard::attempt does not exist`). No es bug de la API (en la realidad cada
+    request es una app nueva). Se resuelve con el helper `reiniciarAuth()` (`forgetGuards()` +
+    `shouldUse('web')`) en `perfil/Test.php`.
+  - Suite completa: **135 tests, 306 assertions, en verde** (2 corridas). Ahora las 19 rutas tienen tests.
+- **Colección Postman** (`docs/postman/`, rama `admin`, 2026-10-11) — **replica los casos de los tests de
+  PHPUnit** (rehecha a pedido del usuario; antes era una colección más chica con firmados manuales):
+  - `encuesta_atencion.postman_collection.json` — 141 requests en carpetas `00 Setup` (health + login admin),
+    `01 Register`, `02 Login`, `03 Logout`, `04 Perfil`, `05 Correo (links firmados)`, `06 Encuesta`,
+    `07 Admin`, `08 Métricas`, `99 Limpieza`. Cada carpeta registra sus propios usuarios (correo con un id
+    de corrida `run`), guarda ids/tokens en variables de colección y anota los ids en `idsCreados`;
+    `99 Limpieza` los borra con `pm.sendRequest` (DELETE admin) y hace logout del admin. Se corre completa y
+    en orden.
+  - **Links firmados automáticos**: la carpeta 05 firma las URLs en el pre-request con el mismo algoritmo
+    que Laravel (`UrlGenerator::signedRoute`/`hasCorrectSignature`): query ordenada por clave + `expires`,
+    `HMAC-SHA256("url?query", APP_KEY tal cual, con el "base64:")`, y `hash = sha1(correo)`. Necesita la
+    variable `appKey` (vacía en el environment versionado; se pasa con `--env-var "appKey=..."`). Usa
+    `CryptoJS` (Postman avisa que está deprecado, pero funciona).
+  - `encuesta_local.postman_environment.json` — `baseUrl`, `adminCorreo`/`adminClave` (= `ADMIN_EMAIL`/
+    `ADMIN_PASSWORD` del `.env`), `usuarioClave`, `usuarioClaveNueva`, `appKey`.
+  - Lo que Postman no puede replicar (mails enviados, cascada mirando la BD, encuesta sin todas las
+    respuestas, métricas con valores exactos) queda solo en PHPUnit; en métricas Postman verifica las
+    reglas de cálculo (distribución suma el total, promedio ponderado, ajustado = 6 − promedio en N, grupos
+    fijos, suma de encuestas por grupo = total).
+  - Verificado con **Postman CLI** (`postman-cli` 1.73.0, instalado global con npm): **141 requests, 244
+    assertions, 0 fallos**; la limpieza deja 0 usuarios `@test.local`.
+  - `docs/casos_de_uso_api.md` — tabla de casos por carpeta (generada de la colección) con el archivo de
+    tests que cubre cada uno, cómo correr ambos y los casos que solo prueba PHPUnit.
+  - **Bug encontrado y corregido** (a pedido del usuario, lo corrigió el asistente): el link
+    firmado de cambio de correo se podía **reusar** mientras no expirara, porque `updateEmail()` no
+    comparaba el `hash` de la URL contra el correo actual (como sí hace `verifyEmail()`). Ahora
+    `PerfilController::updateEmail()`: 404 si el `id` no existe (antes tiraba 500 por `null`), y
+    403 `"El link de cambio de correo ya no es válido"` si `sha1(getEmailForVerification())` no
+    coincide con el `hash` (comparado con `hash_equals`). Como el hash se genera con el correo de
+    ese momento, al cambiar el correo el link viejo deja de servir. Verificado: 1er uso 200, 2do
+    uso con el mismo link 403.
+  - **Bug corregido**: `updateEmail()`, `updateName()` y `updatePassword()` devolvían el usuario
+    bajo la key `"0"`; ahora va bajo `"usuario"`. (`showUserByEmail()` de las rutas `//TEST`
+    mantiene el mismo patrón, no se tocó porque se va a eliminar.)
+  - Tras los fixes: `php artisan test` → 82 tests en verde. Los tests de estos casos están ahora en
+    `tests/Feature/Api/correo/Test.php` y `perfil/Test.php` (ver arriba).
 
 ## Stack
 - Laravel (última) + PHP (última). Auth: **Sanctum v4.3.2** (token para SPA) — instalado y
@@ -641,13 +852,16 @@ Relaciones: Usuario 1—N Encuesta; Encuesta 1—N Respuesta; Pregunta 1—N Res
   `GET /me/actualizar/correo/verificacion/firma` (name: `verification.verify.sign`),
   `PUT /me/actualizar/correo` (name: `update.email`).
 - Público: `GET /health`.
+- Admin (auth:sanctum + middleware `es_admin`): `GET /admin/usuarios` (paginado),
+  `GET /admin/usuarios/{id}/respuestas`, `PUT /admin/usuario/editar` (edición parcial,
+  validado por `EditarUsuarioRequest`), `DELETE /admin/usuario/eliminar` (revoca tokens
+  Sanctum antes de borrar, validado por `EliminarUsuarioRequest`).
 - **Rate limiting**: middleware `throttle:60,1` aplicado a todos los grupos de rutas API
-  (públicas, signed, auth:sanctum). 60 requests por minuto.
+  (públicas, signed, auth:sanctum, admin). 60 requests por minuto.
 - Encuesta (pendiente): `GET /preguntas`, `POST /encuesta/iniciar`, `GET /encuesta`,
   `PUT /encuesta/respuestas/{idPregunta}`, `POST /encuesta/enviar`, `GET /encuesta/estado`,
   `GET /encuesta/compartir`.
-- Admin (pendiente, `/api/admin`, middleware rol admin): `GET /metricas`, `GET /usuarios`,
-  `GET /usuarios/{id}/respuestas`, `PUT /usuarios/{id}`, `DELETE /usuarios/{id}`.
+- Admin: `GET /admin/metricas` (`MetricasController::obtenerMetricas`).
 
 ## Decisiones
 - Rol admin mediante columna `rol` en `usuario` (no tabla de roles aparte).

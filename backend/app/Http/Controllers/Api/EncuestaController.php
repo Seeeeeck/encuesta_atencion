@@ -36,7 +36,7 @@ class EncuestaController extends Controller
                 'mensaje' => $e->getMessage(),
             ]);
 
-            return response()->json(["message" => "Error al obtener preguntas"], 500);
+            return response()->json(["message" => "Err:Error al obtener preguntas"], 500);
         }
     }
 
@@ -80,7 +80,7 @@ class EncuestaController extends Controller
                 'mensaje' => $e->getMessage(),
             ]);
 
-            return response()->json(["message" => "Error al enviar encuesta"], 500);
+            return response()->json(["message" => "Err:Error al enviar encuesta"], 500);
         }
     }
 }

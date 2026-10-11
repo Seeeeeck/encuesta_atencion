@@ -24,7 +24,7 @@ class UpdateCorreoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            
+            'correo'=>"required|email|unique:usuario,correo"
         ];
     }
 
@@ -36,7 +36,9 @@ class UpdateCorreoRequest extends FormRequest
     public function messages(): array
     {
         return [
-            
+            'correo.required'=>"El correo es requerido",
+            'correo.email'=>"El correo debe ser válido",
+            'correo.unique'=>"El correo ya existe en la base de datos"
         ];
     }
 }

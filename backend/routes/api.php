@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EncuestaController;
+use App\Http\Controllers\Api\MetricasController;
 use App\Http\Controllers\Api\PerfilController;
 use Illuminate\Support\Facades\Route;
 
@@ -9,11 +11,14 @@ Route::get('/health', function () {
     return response()->json(['status' => 'ok']);
 });
 
+//Api de autenticación
 Route::middleware('throttle:60,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
 });
 
+
+//Api de usuario
 Route::middleware(['auth:sanctum', 'throttle:60,1'])
     ->group(function () {
         //logout
@@ -37,6 +42,12 @@ Route::middleware(["signed", 'throttle:60,1'])->group(function () {
     Route::put('/me/actualizar/correo', [PerfilController::class, 'updateEmail'])->name('update.email');
 });
 
-//TEST
-Route::get("user/email", [PerfilController::class, "showUserByEmail"]);
-Route::post("user/destroy", [PerfilController::class, "deleteUserByEmail"]);
+//Api de admin
+Route::middleware(['auth:sanctum', 'es_admin','throttle:60,1'])
+    ->group(function () {
+        Route::get("/admin/usuarios", [AdminController::class, 'listarUsuarios']);
+        Route::get('/admin/usuarios/{id}/respuestas',[AdminController::class,'obtenerUsuarioRespuestas']);
+        Route::put("/admin/usuario/editar",[AdminController::class,'editarUsuario']);
+        Route::delete("/admin/usuario/eliminar",[AdminController::class,'eliminarUsuario']);
+        Route::get("/admin/metricas", [MetricasController::class, "obtenerMetricas"]);
+    });

@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // API pura (Sanctum por token): no hay página de login servida por Laravel,
         // así que nunca se debe intentar redirigir a una ruta "login" inexistente.
         $middleware->redirectGuestsTo(fn () => null);
+        $middleware->alias(['es_admin'=>\App\Http\Middleware\EsAdmin::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

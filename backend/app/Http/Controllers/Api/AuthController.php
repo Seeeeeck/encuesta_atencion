@@ -40,7 +40,7 @@ class AuthController extends Controller
                 'mensaje' => $e->getMessage(),
             ]);
 
-            return response()->json(['message' => 'Ocurrió un error al registrar el usuario.'], 500);
+            return response()->json(['message' => 'Err:Ocurrió un error al registrar el usuario.'], 500);
         }
     }
 
@@ -74,7 +74,7 @@ class AuthController extends Controller
                 'mensaje' => $e->getMessage(),
             ]);
 
-            return response()->json(['message' => 'Ocurrió un error al iniciar sesión.'], 500);
+            return response()->json(['message' => 'Err:Ocurrió un error al iniciar sesión.'], 500);
         }
     }
 
@@ -94,7 +94,7 @@ class AuthController extends Controller
                 'mensaje' => $e->getMessage(),
             ]);
 
-            return response()->json(['message' => 'Ocurrió un error al cerrar sesión.'], 500);
+            return response()->json(['message' => 'Err:Ocurrió un error al cerrar sesión.'], 500);
         }
     }
 
@@ -143,7 +143,7 @@ class AuthController extends Controller
             ]);
 
             return response()->json([
-                "message" => "Se capturó un error no controlado al verificar email",
+                "message" => "Err:Se capturó un error no controlado al verificar email",
                 
             ],500 );
         }
