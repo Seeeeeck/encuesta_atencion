@@ -768,22 +768,49 @@
   `storage/*` (vía `*.log` + `.gitignore` anidados en `storage/framework/*`). No requirió ajustes.
 - **Comandos de desarrollo** documentados en la raíz `CLAUDE.md` (sección Comandos):
   `composer install`, `php artisan migrate`, `php artisan serve`, `php artisan test`.
-- **Colección Postman** (`docs/postman/`, rama `admin`, 2026-10-11):
-  - `encuesta_atencion.postman_collection.json` — carpetas `00 Health`, `01 Auth`, `02 Encuesta`,
-    `03 Perfil`, `04 Firmados (manual)`, `05 Admin`, `06 Cierre`, pensadas para correr en orden
-    (Runner o `newman`). Registran un usuario de prueba con correo aleatorio, guardan tokens/ids en
-    variables de colección, arman el body de `POST /encuesta/enviar` desde `GET /encuesta/obtener/
-    preguntas`, prueban caminos felices + errores (401/403/404/422) y al final borran lo que crearon.
-    No incluye las rutas `//TEST` (`user/email`, `user/destroy`).
-  - `encuesta_local.postman_environment.json` — `baseUrl` (`http://localhost:8000/api`),
-    `adminCorreo`/`adminClave` (deben coincidir con `ADMIN_EMAIL`/`ADMIN_PASSWORD` del `.env`),
-    claves del usuario de prueba y variables para los endpoints firmados (se copian del mail, que con
-    `MAIL_MAILER=log` queda en `storage/logs/laravel.log`).
-  - Se sumaron `Métricas`, `Métricas - usuario normal (403)` y `Editar usuario - correo de otro usuario
-    (422)` a la carpeta `05 Admin`.
-  - Verificado con `newman`: carpetas 00–03, 05 y 06 → 36 requests, 54 assertions, 0 fallos. Los
-    firmados (carpeta 04) se probaron a mano con los links del log: verificación de registro → 200,
-    firma alterada → 403, cambio de correo → 200.
+- **Tests de los endpoints que no tenían cobertura** (2026-10-11, rama `admin`, escritos por el asistente a
+  pedido del usuario). Cada archivo arranca con un comentario "Casos de uso cubiertos":
+  - `tests/Feature/Api/perfil/Test.php` (`TestsFeatureApiPerfil`): `GET /me` (datos sin clave, 401),
+    `PUT /me/actualizar/nombre` (200, 422 faltante/corto/largo, 401), `PUT /me/actualizar/clave` (200 + login
+    con la nueva y 401 con la vieja, 401 clave actual incorrecta, 422 x6, 401 sin token),
+    `DELETE /me/eliminar/usuario` (borra usuario + tokens, cascada a encuesta/respuestas, token inservible
+    después, 401).
+  - `tests/Feature/Api/correo/Test.php` (`TestsFeatureApiCorreo`): el registro manda `VerificarCorreo`
+    (`Notification::fake()`); `GET /email/verificar/{id}/{hash}` (200 + `is_verified`, 403 hash de otro correo,
+    404 usuario inexistente, 403 firma alterada/vencida/sin firma); `GET /me/actualizar/correo/verificacion`
+    (manda `VerificarCambioCorreo`, 401); `GET .../verificacion/firma` (200, 403 x3); `PUT /me/actualizar/correo`
+    (200, **403 link reusado**, 403 hash de otro correo, 403 x3 link inválido, 422 faltante/formato/ocupado, 404).
+    Los links se arman en el test con `URL::temporarySignedRoute()` (igual que las notificaciones), sin leer mails.
+  - `tests/Feature/Api/health/Test.php`: `GET /health` → 200 `{"status":"ok"}`.
+  - **Gotcha de tests**: dentro de un mismo test la app se reutiliza entre requests; tras pasar por
+    `auth:sanctum` el guard por defecto queda en `sanctum` (y recuerda al usuario), entonces un `POST /login`
+    posterior tiraba 500 (`RequestGuard::attempt does not exist`). No es bug de la API (en la realidad cada
+    request es una app nueva). Se resuelve con el helper `reiniciarAuth()` (`forgetGuards()` +
+    `shouldUse('web')`) en `perfil/Test.php`.
+  - Suite completa: **135 tests, 306 assertions, en verde** (2 corridas). Ahora las 19 rutas tienen tests.
+- **Colección Postman** (`docs/postman/`, rama `admin`, 2026-10-11) — **replica los casos de los tests de
+  PHPUnit** (rehecha a pedido del usuario; antes era una colección más chica con firmados manuales):
+  - `encuesta_atencion.postman_collection.json` — 141 requests en carpetas `00 Setup` (health + login admin),
+    `01 Register`, `02 Login`, `03 Logout`, `04 Perfil`, `05 Correo (links firmados)`, `06 Encuesta`,
+    `07 Admin`, `08 Métricas`, `99 Limpieza`. Cada carpeta registra sus propios usuarios (correo con un id
+    de corrida `run`), guarda ids/tokens en variables de colección y anota los ids en `idsCreados`;
+    `99 Limpieza` los borra con `pm.sendRequest` (DELETE admin) y hace logout del admin. Se corre completa y
+    en orden.
+  - **Links firmados automáticos**: la carpeta 05 firma las URLs en el pre-request con el mismo algoritmo
+    que Laravel (`UrlGenerator::signedRoute`/`hasCorrectSignature`): query ordenada por clave + `expires`,
+    `HMAC-SHA256("url?query", APP_KEY tal cual, con el "base64:")`, y `hash = sha1(correo)`. Necesita la
+    variable `appKey` (vacía en el environment versionado; se pasa con `--env-var "appKey=..."`). Usa
+    `CryptoJS` (Postman avisa que está deprecado, pero funciona).
+  - `encuesta_local.postman_environment.json` — `baseUrl`, `adminCorreo`/`adminClave` (= `ADMIN_EMAIL`/
+    `ADMIN_PASSWORD` del `.env`), `usuarioClave`, `usuarioClaveNueva`, `appKey`.
+  - Lo que Postman no puede replicar (mails enviados, cascada mirando la BD, encuesta sin todas las
+    respuestas, métricas con valores exactos) queda solo en PHPUnit; en métricas Postman verifica las
+    reglas de cálculo (distribución suma el total, promedio ponderado, ajustado = 6 − promedio en N, grupos
+    fijos, suma de encuestas por grupo = total).
+  - Verificado con **Postman CLI** (`postman-cli` 1.73.0, instalado global con npm): **141 requests, 244
+    assertions, 0 fallos**; la limpieza deja 0 usuarios `@test.local`.
+  - `docs/casos_de_uso_api.md` — tabla de casos por carpeta (generada de la colección) con el archivo de
+    tests que cubre cada uno, cómo correr ambos y los casos que solo prueba PHPUnit.
   - **Bug encontrado y corregido** (a pedido del usuario, lo corrigió el asistente): el link
     firmado de cambio de correo se podía **reusar** mientras no expirara, porque `updateEmail()` no
     comparaba el `hash` de la URL contra el correo actual (como sí hace `verifyEmail()`). Ahora
@@ -795,8 +822,8 @@
   - **Bug corregido**: `updateEmail()`, `updateName()` y `updatePassword()` devolvían el usuario
     bajo la key `"0"`; ahora va bajo `"usuario"`. (`showUserByEmail()` de las rutas `//TEST`
     mantiene el mismo patrón, no se tocó porque se va a eliminar.)
-  - Tras los fixes: `php artisan test` → 82 tests en verde; `newman` → 33 requests, 46 assertions,
-    0 fallos. Sin tests de PHPUnit nuevos para estos casos todavía.
+  - Tras los fixes: `php artisan test` → 82 tests en verde. Los tests de estos casos están ahora en
+    `tests/Feature/Api/correo/Test.php` y `perfil/Test.php` (ver arriba).
 
 ## Stack
 - Laravel (última) + PHP (última). Auth: **Sanctum v4.3.2** (token para SPA) — instalado y
