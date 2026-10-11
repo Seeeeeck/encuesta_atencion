@@ -346,7 +346,7 @@
       `user/destroy` borra usuarios sin autenticación — **quitar antes de mergear a `main`**.
     - También se agregó `POST /destroy/user` → `destroy` dentro del grupo `auth:sanctum` (alias del
       `DELETE /me`, para pruebas).
-    - **Pendiente**: estas rutas/métodos `//TEST` se quitan antes de cerrar la fase / mergear a `main`.
+    - **Eliminadas** en la rama `admin` (Fase 05), antes de mergear a `main`.
   - Falta cerrar el paso 2: considerar tests de Feature para estos 5 endpoints.
   - **Tests reestructurados**: los tests de Feature en `tests/Feature/Api/` pasaron a subcarpetas
     por endpoint: `login/Test.php` (`Tests\Feature\Api\Login\Test`) y `register/Test.php`
@@ -721,13 +721,82 @@
     `eliminarUsuario`.
   - Suite completa verificada tras estos cambios: `php artisan test` → **82 tests, 164
     assertions, todos en verde**.
-  - **Pendiente para cerrar la Fase 05**: `Admin/MetricasController` (`GET /admin/metricas`).
+  - **`MetricasController` creado** (lo escribió el asistente a pedido del usuario, "hacelo tú") —
+    `app/Http/Controllers/Api/MetricasController.php` (namespace `Api`, no `ApiAdmin`, separado de
+    `AdminController` por responsabilidad única). `obtenerMetricas()` → `GET /admin/metricas`, un solo
+    endpoint que devuelve `{"message", "metricas": {resumen, por_pregunta, por_edad, por_sexo}}`:
+    - **Decisiones del usuario**: edad agrupada por **rangos** (`<18`, `18-25`, `26-35`, `36-50`, `>50`,
+      `Sin dato`); promedio **crudo + ajustado**; **un solo endpoint**.
+    - **Valor ajustado**: las preguntas `tipo = 'N'` se invierten con `6 - respuesta` (SQL `CASE`), así en
+      toda métrica ajustada 5 = mejor atención. El "índice de atención" es el `AVG` del valor ajustado.
+    - `resumen`: `total_usuarios` (solo `rol = usuario`), `total_encuestas`, `encuestas_completadas`
+      (`is_ok = true`), `indice_atencion_general`.
+    - `por_pregunta`: `LEFT JOIN` desde `pregunta` (aparecen aunque no tengan respuestas) con
+      `total_respuestas`, `promedio`, `promedio_ajustado` y `distribucion` `{"1".."5": cantidad}`
+      (arranca en 0; se calcula con un segundo `GROUP BY id_pregunta, respuesta`).
+    - `por_edad` / `por_sexo`: método privado genérico `porGrupo()` (JOIN respuesta→pregunta→encuesta→
+      usuario, `COUNT(DISTINCT encuesta.id)` + índice). Siempre devuelve todas las categorías (las vacías
+      con `encuestas: 0` e `indice_atencion: null`) para que el gráfico del panel sea estable. Sexo
+      `null` → `Sin dato` (`COALESCE`).
+    - Postgres devuelve `AVG` como texto numérico → `redondear()` lo pasa a float con 2 decimales.
+    - Todo el cálculo lo hace la BD (agregación + `GROUP BY`); no se traen filas sueltas a PHP.
+  - Ruta `GET /admin/metricas` agregada al grupo admin en `routes/api.php` (+ `use MetricasController`).
+  - **Tests** en `tests/Feature/Api/admin/MetricasController/Test.php` (4 tests, 25 assertions): sin token
+    401, usuario normal 403, sin respuestas (todo en 0/null, 6 rangos, 4 sexos) y cálculos exactos con 2
+    usuarios y 2 preguntas (P y N). Crean sus propias `Pregunta` y usan los ids devueltos (no hardcodeados).
+  - **Efecto colateral corregido**: estos tests avanzan la secuencia de `pregunta` (no transaccional en
+    Postgres) y rompían `encuesta/Test::test_obtener_preguntas`, que sembraba sin `Pregunta::truncate()`
+    y esperaba ids 1–10. Se le agregó el `truncate()` igual que al resto de los tests.
+  - Suite completa: **86 tests, 189 assertions, en verde** (corrida 2 veces seguidas).
+  - Nota: `DatosPruebaSeeder` crea las encuestas con `is_ok = false` (default), así que con esos datos
+    `encuestas_completadas` da 0 aunque tengan todas las respuestas.
+  - **Edición de correo por el admin** (paso 4 del plan, lo escribió el asistente a pedido del usuario):
+    `EditarUsuarioRequest` acepta `correo` (`email`, `max:150`,
+    `Rule::unique('usuario', 'correo')->ignore($this->id)` → único sin contar al propio usuario editado,
+    así mandar su mismo correo no da 422) + 3 mensajes en español; `correo` sumado a
+    `required_without_all` de `regla`. `AdminController::editarUsuario()` actualiza `correo` si viene
+    (`filled`). No toca `is_verified`. Tests nuevos en los data providers: inválidos `correo_invalido`,
+    `correo_largo`, `correo_de_otro` (422); válidos `correo_nuevo`, `correo_propio` (200).
+  - **Rutas y métodos `//TEST` eliminados** (confirmado por el usuario antes del merge a `main`):
+    `GET user/email` y `POST user/destroy` de `routes/api.php`, y `showUserByEmail()` /
+    `deleteUserByEmail()` de `PerfilController`. Ya no existe la ruta pública que borraba usuarios sin auth.
+  - Suite completa: **91 tests, 202 assertions, en verde** (2 corridas seguidas).
+  - **Fase 05 completa (`listo`)** — los 5 pasos de `plan/05` marcados.
 - **Logs**: se usa `storage/logs/laravel.log` (canal `single` por defecto de Laravel). No se
   creó una carpeta `/logs` aparte — el paso 5 de la Fase 00 se marcó listo así.
 - **`.gitignore`**: el que trae Laravel 11+ ya cubre `.env`, `/vendor`, `/node_modules` y todo
   `storage/*` (vía `*.log` + `.gitignore` anidados en `storage/framework/*`). No requirió ajustes.
 - **Comandos de desarrollo** documentados en la raíz `CLAUDE.md` (sección Comandos):
   `composer install`, `php artisan migrate`, `php artisan serve`, `php artisan test`.
+- **Colección Postman** (`docs/postman/`, rama `admin`, 2026-10-11):
+  - `encuesta_atencion.postman_collection.json` — carpetas `00 Health`, `01 Auth`, `02 Encuesta`,
+    `03 Perfil`, `04 Firmados (manual)`, `05 Admin`, `06 Cierre`, pensadas para correr en orden
+    (Runner o `newman`). Registran un usuario de prueba con correo aleatorio, guardan tokens/ids en
+    variables de colección, arman el body de `POST /encuesta/enviar` desde `GET /encuesta/obtener/
+    preguntas`, prueban caminos felices + errores (401/403/404/422) y al final borran lo que crearon.
+    No incluye las rutas `//TEST` (`user/email`, `user/destroy`).
+  - `encuesta_local.postman_environment.json` — `baseUrl` (`http://localhost:8000/api`),
+    `adminCorreo`/`adminClave` (deben coincidir con `ADMIN_EMAIL`/`ADMIN_PASSWORD` del `.env`),
+    claves del usuario de prueba y variables para los endpoints firmados (se copian del mail, que con
+    `MAIL_MAILER=log` queda en `storage/logs/laravel.log`).
+  - Se sumaron `Métricas`, `Métricas - usuario normal (403)` y `Editar usuario - correo de otro usuario
+    (422)` a la carpeta `05 Admin`.
+  - Verificado con `newman`: carpetas 00–03, 05 y 06 → 36 requests, 54 assertions, 0 fallos. Los
+    firmados (carpeta 04) se probaron a mano con los links del log: verificación de registro → 200,
+    firma alterada → 403, cambio de correo → 200.
+  - **Bug encontrado y corregido** (a pedido del usuario, lo corrigió el asistente): el link
+    firmado de cambio de correo se podía **reusar** mientras no expirara, porque `updateEmail()` no
+    comparaba el `hash` de la URL contra el correo actual (como sí hace `verifyEmail()`). Ahora
+    `PerfilController::updateEmail()`: 404 si el `id` no existe (antes tiraba 500 por `null`), y
+    403 `"El link de cambio de correo ya no es válido"` si `sha1(getEmailForVerification())` no
+    coincide con el `hash` (comparado con `hash_equals`). Como el hash se genera con el correo de
+    ese momento, al cambiar el correo el link viejo deja de servir. Verificado: 1er uso 200, 2do
+    uso con el mismo link 403.
+  - **Bug corregido**: `updateEmail()`, `updateName()` y `updatePassword()` devolvían el usuario
+    bajo la key `"0"`; ahora va bajo `"usuario"`. (`showUserByEmail()` de las rutas `//TEST`
+    mantiene el mismo patrón, no se tocó porque se va a eliminar.)
+  - Tras los fixes: `php artisan test` → 82 tests en verde; `newman` → 33 requests, 46 assertions,
+    0 fallos. Sin tests de PHPUnit nuevos para estos casos todavía.
 
 ## Stack
 - Laravel (última) + PHP (última). Auth: **Sanctum v4.3.2** (token para SPA) — instalado y
@@ -765,7 +834,7 @@ Relaciones: Usuario 1—N Encuesta; Encuesta 1—N Respuesta; Pregunta 1—N Res
 - Encuesta (pendiente): `GET /preguntas`, `POST /encuesta/iniciar`, `GET /encuesta`,
   `PUT /encuesta/respuestas/{idPregunta}`, `POST /encuesta/enviar`, `GET /encuesta/estado`,
   `GET /encuesta/compartir`.
-- Admin (pendiente): `GET /admin/metricas`.
+- Admin: `GET /admin/metricas` (`MetricasController::obtenerMetricas`).
 
 ## Decisiones
 - Rol admin mediante columna `rol` en `usuario` (no tabla de roles aparte).

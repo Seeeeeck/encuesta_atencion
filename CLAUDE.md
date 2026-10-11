@@ -108,7 +108,7 @@
 - `02-modelo-datos.md` (listo)
 - `03-auth-backend.md`
 - `04-encuesta-backend.md` (listo)
-- `05-admin-backend.md`
+- `05-admin-backend.md` (listo)
 - `06-frontend-base.md`
 - `07-frontend-auth.md`
 - `08-frontend-encuesta.md`
