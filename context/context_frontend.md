@@ -82,8 +82,8 @@
     requests y responde lo indicado), `renderConRutas()`, `datos.ts` (usuarios de prueba).
   - Verificado: **70 tests en verde**, `tsc -b`, `oxlint` y `vite build` limpios (JS 94 kB gzip).
     En Chrome contra la API real: inicio, navegación cliente, 404 y `/health` vía CORS.
-  - Pendiente de confirmar con el usuario: borrar los restos de la demo de Vite (`src/App.tsx`,
-    `src/App.css`, `src/assets/*`, `public/icons.svg`), que ya no se usan.
+  - Restos de la demo de Vite borrados (confirmado por el usuario): `src/App.tsx`,
+    `src/App.css`, `src/assets/*`, `public/icons.svg`.
 - **Comandos de desarrollo** documentados en la raíz `CLAUDE.md` (sección Comandos):
   `npm install`, `npm run dev`, `npm run build`, `npm run lint`.
 
